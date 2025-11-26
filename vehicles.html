@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlexiCarz — Available Vehicles</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0b6efd" stroke-width="2">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+            <path d="M6 10h12M6 14h12M9 10v4M15 10v4" stroke="#0b6efd"></path>
+          </svg>
+          <span>FlexiCarz</span>
+        </div>
+
+        <nav class="nav-links">
+          <a href="index.html" class="nav-link">Home</a>
+          <a href="vehicles.html" class="nav-link active">Vehicles</a>
+          <a href="booking.html" class="nav-link">Booking</a>
+          <a href="#" class="nav-link">About</a>
+        </nav>
+
+        <div class="nav-actions">
+          <span class="user-name" id="userName"></span>
+          <a href="verify-documents.html" id="verifyDocsBtn" class="btn btn-verify">Verify Documents</a>
+          <button id="logoutBtn" class="btn-logout">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Filter & Search Section -->
+  <section class="filters-section">
+    <div class="container">
+      <h2>Filter Your Ride</h2>
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="categoryFilter">
+            <span class="filter-label">Category</span>
+            <select id="categoryFilter">
+              <option value="all">All Categories</option>
+              <option value="SUV">SUV</option>
+              <option value="Sedan">Sedan</option>
+              <option value="Hatchback">Hatchback</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filter-group">
+          <label for="priceFilter">
+            <span class="filter-label">Price Range</span>
+            <select id="priceFilter">
+              <option value="all">All Prices</option>
+              <option value="low">Below ₹2,000/day</option>
+              <option value="medium">₹2,000 - ₹4,000/day</option>
+              <option value="high">Above ₹4,000/day</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="filter-group">
+          <label for="searchCar">
+            <span class="filter-label">Search</span>
+            <input type="text" id="searchCar" placeholder="Search by model..." />
+          </label>
+        </div>
+
+        <button id="resetFilters" class="btn-reset">Reset Filters</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Car List Section -->
+  <section class="cars-section">
+    <div class="container">
+      <div class="section-header">
+        <h2>Available Vehicles</h2>
+        <p>Choose from our premium fleet of well-maintained vehicles</p>
+      </div>
+      <div id="carList" class="car-grid">
+        <!-- JS will insert car cards -->
+      </div>
+      <div id="noResults" class="no-results" style="display:none;">
+        <p>No vehicles match your filters. Try adjusting your search.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>About Us</h4>
+          <p>FlexiCarz is your trusted partner for premium car rentals with transparent pricing and exceptional service.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="vehicles.html">Vehicles</a></li>
+            <li><a href="booking.html">Booking</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li>📧 akshaykumaraksh003@gmail.com</li>
+            <li>📞 7022853515</li>
+            <li>🕐 24/7 Available</li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Follow Us</h4>
+          <div class="social-links">
+            <a href="#">Twitter</a>
+            <a href="#">Facebook</a>
+            <a href="#">Instagram</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 FlexiCarz Rentals. All Rights Reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

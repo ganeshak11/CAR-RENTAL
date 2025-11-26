@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flexi Carz — Create Account</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="auth-layout">
+    <!-- Left Panel: Form -->
+    <section class="auth-panel">
+      <div class="auth-content">
+        <div class="auth-header">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0b6efd" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <path d="M7 12h10M7 8h10M7 16h10"></path>
+          </svg>
+          <div>
+            <h1 class="brand-title">Flexi Carz</h1>
+            <p class="brand-sub">Premium Vehicle Rentals</p>
+          </div>
+        </div>
+
+        <div class="auth-card">
+          <h2 class="auth-title">Create Account</h2>
+          <p class="auth-subtitle">Join Flexi Carz and start booking premium vehicles</p>
+
+          <form id="signupForm" novalidate class="auth-form">
+            <div class="form-group">
+              <label for="signupName" class="form-label">Full Name</label>
+              <input 
+                id="signupName" 
+                name="name" 
+                type="text" 
+                placeholder="John Doe" 
+                required 
+                autocomplete="name"
+                class="form-input"
+              />
+              <span class="error-msg" id="nameError"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="signupEmail" class="form-label">Email Address</label>
+              <input 
+                id="signupEmail" 
+                name="email" 
+                type="email" 
+                placeholder="you@company.com" 
+                required 
+                autocomplete="email"
+                class="form-input"
+              />
+              <span class="error-msg" id="emailError"></span>
+            </div>
+
+            <div class="form-group">
+              <label for="signupPassword" class="form-label">Password</label>
+              <div class="password-wrapper">
+                <input 
+                  id="signupPassword" 
+                  name="password" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  required 
+                  autocomplete="new-password"
+                  class="form-input"
+                />
+                <button type="button" class="toggle-password" id="toggleSignupPassword" aria-label="Show password">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <span class="error-msg" id="passwordError"></span>
+              <p class="password-hint" id="passwordHint">At least 8 characters with uppercase, lowercase, and numbers</p>
+            </div>
+
+            <div class="form-group">
+              <label for="signupConfirm" class="form-label">Confirm Password</label>
+              <div class="password-wrapper">
+                <input 
+                  id="signupConfirm" 
+                  name="confirm" 
+                  type="password" 
+                  placeholder="••••••••" 
+                  required 
+                  autocomplete="new-password"
+                  class="form-input"
+                />
+                <button type="button" class="toggle-password" id="toggleConfirmPassword" aria-label="Show password">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <span class="error-msg" id="confirmError"></span>
+            </div>
+
+            <label class="checkbox">
+              <input id="termsCheckbox" type="checkbox" name="terms" required />
+              <span>I agree to the <a href="#" class="auth-link">Terms of Service</a> and <a href="#" class="auth-link">Privacy Policy</a></span>
+            </label>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+              <span class="btn-text">Create Account</span>
+              <span class="btn-loader" id="btnLoader" style="display:none;">
+                <span class="spinner"></span>
+              </span>
+            </button>
+
+            <div class="divider">OR</div>
+
+            <button type="button" class="btn btn-google btn-full" id="googleSignUpBtn">
+              <svg width="18" height="18" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              Continue with Google
+            </button>
+
+            <div id="signupMsg" class="message" role="status" aria-live="polite"></div>
+
+            <p class="auth-footer">
+              Already have an account? <a href="login.html" class="auth-link">Sign in</a>
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Panel: Hero -->
+    <section class="auth-hero">
+      <div class="hero-wrapper">
+        <h2 class="hero-title">Join Thousands<br>of Happy Travelers</h2>
+        <p class="hero-description">Experience seamless car rentals with transparent pricing and exceptional service.</p>
+        
+        <ul class="hero-features">
+          <li>✓ Quick & easy registration</li>
+          <li>✓ Verified drivers only</li>
+          <li>✓ Premium fleet selection</li>
+          <li>✓ Instant booking confirmation</li>
+          <li>✓ 24/7 dedicated support</li>
+          <li>✓ Secure & encrypted</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script>
+    // ===== SIGNUP =====
+    const signupForm = document.getElementById("signupForm");
+    if (signupForm) {
+      const nameInput = document.getElementById("signupName");
+      const emailInput = document.getElementById("signupEmail");
+      const passwordInput = document.getElementById("signupPassword");
+      const confirmInput = document.getElementById("signupConfirm");
+      const termsCheckbox = document.getElementById("termsCheckbox");
+      const signupMsg = document.getElementById("signupMsg");
+      const submitBtn = document.getElementById("submitBtn");
+      const btnLoader = document.getElementById("btnLoader");
+      const btnText = submitBtn.querySelector(".btn-text");
+      const passwordHint = document.getElementById("passwordHint");
+      const toggleSignupPassword = document.getElementById("toggleSignupPassword");
+      const toggleConfirmPassword = document.getElementById("toggleConfirmPassword");
+
+      // Password visibility toggles
+      if (toggleSignupPassword) {
+        toggleSignupPassword.addEventListener("click", (e) => {
+          e.preventDefault();
+          const isPassword = passwordInput.type === "password";
+          passwordInput.type = isPassword ? "text" : "password";
+          toggleSignupPassword.classList.toggle("active", !isPassword);
+        });
+      }
+
+      if (toggleConfirmPassword) {
+        toggleConfirmPassword.addEventListener("click", (e) => {
+          e.preventDefault();
+          const isPassword = confirmInput.type === "password";
+          confirmInput.type = isPassword ? "text" : "password";
+          toggleConfirmPassword.classList.toggle("active", !isPassword);
+        });
+      }
+
+      // Real-time validation
+      nameInput.addEventListener("blur", validateName);
+      emailInput.addEventListener("blur", validateEmail);
+      passwordInput.addEventListener("blur", validatePassword);
+      passwordInput.addEventListener("input", validatePasswordStrength);
+      confirmInput.addEventListener("blur", validateConfirm);
+
+      function validateName() {
+        const errorEl = document.getElementById("nameError");
+        const name = nameInput.value.trim();
+
+        if (!name) {
+          errorEl.textContent = "Name is required";
+          nameInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        if (name.length < 2) {
+          errorEl.textContent = "Name must be at least 2 characters";
+          nameInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        errorEl.textContent = "";
+        nameInput.style.borderColor = "";
+        return true;
+      }
+
+      function validateEmail() {
+        const errorEl = document.getElementById("emailError");
+        const email = emailInput.value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        if (!email) {
+          errorEl.textContent = "Email is required";
+          emailInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        if (!emailRegex.test(email)) {
+          errorEl.textContent = "Enter a valid email";
+          emailInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        errorEl.textContent = "";
+        emailInput.style.borderColor = "";
+        return true;
+      }
+
+      function validatePasswordStrength() {
+        const password = passwordInput.value;
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+        const hasMinLength = password.length >= 8;
+
+        const isStrong = hasUppercase && hasLowercase && hasNumbers && hasMinLength;
+
+        if (password.length > 0) {
+          if (isStrong) {
+            passwordInput.style.borderColor = "var(--success)";
+          } else {
+            passwordInput.style.borderColor = "var(--error)";
+          }
+        }
+      }
+
+      function validatePassword() {
+        const errorEl = document.getElementById("passwordError");
+        const password = passwordInput.value;
+        const hasUppercase = /[A-Z]/.test(password);
+        const hasLowercase = /[a-z]/.test(password);
+        const hasNumbers = /\d/.test(password);
+
+        if (!password) {
+          errorEl.textContent = "Password is required";
+          passwordInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        if (password.length < 8) {
+          errorEl.textContent = "Password must be at least 8 characters";
+          passwordInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        if (!hasUppercase || !hasLowercase || !hasNumbers) {
+          errorEl.textContent = "Must include uppercase, lowercase, and numbers";
+          passwordInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        errorEl.textContent = "";
+        passwordInput.style.borderColor = "";
+        return true;
+      }
+
+      function validateConfirm() {
+        const errorEl = document.getElementById("confirmError");
+        const confirm = confirmInput.value;
+
+        if (!confirm) {
+          errorEl.textContent = "Please confirm password";
+          confirmInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        if (confirm !== passwordInput.value) {
+          errorEl.textContent = "Passwords do not match";
+          confirmInput.style.borderColor = "var(--error)";
+          return false;
+        }
+        errorEl.textContent = "";
+        confirmInput.style.borderColor = "";
+        return true;
+      }
+
+      signupForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // Validate all fields
+        const nameValid = validateName();
+        const emailValid = validateEmail();
+        const passwordValid = validatePassword();
+        const confirmValid = validateConfirm();
+        const termsValid = termsCheckbox.checked;
+
+        if (!nameValid || !emailValid || !passwordValid || !confirmValid) {
+          showSignupMessage("Please fix the errors above", "error");
+          return;
+        }
+
+        if (!termsValid) {
+          showSignupMessage("Please agree to Terms of Service", "error");
+          termsCheckbox.style.borderColor = "var(--error)";
+          return;
+        }
+
+        // Show loading state
+        submitBtn.disabled = true;
+        btnText.style.display = "none";
+        btnLoader.style.display = "flex";
+
+        try {
+          const name = nameInput.value.trim();
+          const email = emailInput.value.trim();
+          const password = passwordInput.value;
+
+          // Use Supabase authentication without email confirmation
+          const { data, error } = await signUpUser(email, password, { full_name: name });
+          
+          if (error) {
+            showSignupMessage(error.message || "Signup failed", "error");
+          } else if (data.user) {
+            // Create user profile in user_profiles table
+            const { error: profileError } = await window.supabase
+              .from('user_profiles')
+              .insert({
+                user_id: data.user.id,
+                full_name: name,
+                role: 'user',
+                verification_status: 'pending'
+              });
+            
+            if (profileError) {
+              console.error('Error creating user profile:', profileError);
+            }
+            
+            // Store user data in localStorage if session exists
+            if (data.session) {
+              localStorage.setItem('supabase_user', JSON.stringify(data.user));
+              localStorage.setItem('supabase_token', data.session.access_token);
+            }
+            
+            // Check if user is confirmed or if confirmation is disabled
+            if (data.user.email_confirmed_at || data.session) {
+              showSignupMessage("✅ Account created successfully! Redirecting...", "success");
+              setTimeout(() => {
+                window.location.href = "index.html";
+              }, 1500);
+            } else {
+              showSignupMessage("✅ Account created! You can now login.", "success");
+              setTimeout(() => {
+                window.location.href = "login.html";
+              }, 1500);
+            }
+          } else {
+            showSignupMessage("Signup failed. Please try again.", "error");
+          }
+        } finally {
+          submitBtn.disabled = false;
+          btnText.style.display = "inline";
+          btnLoader.style.display = "none";
+        }
+      });
+
+      function showSignupMessage(text, type) {
+        signupMsg.textContent = text;
+        signupMsg.className = `message show ${type}`;
+      }
+    }
+
+    const googleSignUpBtn = document.getElementById('googleSignUpBtn');
+    if (googleSignUpBtn) {
+      googleSignUpBtn.addEventListener('click', async () => {
+        const { data, error } = await window.supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: window.location.origin + '/index.html'
+          }
+        });
+        if (error) console.error('Google sign up error:', error);
+      });
+    }
+  </script>
+</body>
+</html>

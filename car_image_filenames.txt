@@ -1,0 +1,55 @@
+Car Image File Names for Each Brand Folder:
+
+Format: cars/[brand]/[modelname].jpg
+(Model name is the car model with spaces removed and all lowercase)
+
+cars/maruti/
+- marutiswift.jpg
+- marutibaleno.jpg
+- marutidzire.jpg
+- marutivitarabrezza.jpg
+- marutiertiga.jpg
+- marutialtok10.jpg
+
+cars/hyundai/
+- hyundaii20.jpg
+- hyundaicreta.jpg
+- hyundaiverna.jpg
+- hyundaivenue.jpg
+- hyundaialcazar.jpg
+- hyundaigrandi10.jpg
+
+cars/tata/
+- tatanexon.jpg
+- tataharrier.jpg
+- tatasafari.jpg
+- tataaltroz.jpg
+- tatatigor.jpg
+
+cars/honda/
+- hondacity.jpg
+- hondaamaze.jpg
+- hondawr-v.jpg
+- hondajazz.jpg
+- hondacr-v.jpg
+
+cars/toyota/
+- toyotafortuner.jpg
+- toyotainnova.jpg
+- toyotaglanza.jpg
+- toyotaurbancruiser.jpg
+
+cars/kia/
+- kiaseltos.jpg
+- kiasonet.jpg
+- kiacarens.jpg
+- kiacarnival.jpg
+
+Brand Logos:
+cars/brandLogos/
+- tata.png
+- hyundai.png
+- maruti.png
+- honda.png
+- toyota.png
+- kia.png

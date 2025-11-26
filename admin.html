@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - FlexiCarz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  
+  <main class="auth-layout">
+    <section class="auth-panel">
+      <div class="auth-content">
+        <div class="auth-header">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#0b6efd" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+            <path d="M7 12h10M7 8h10M7 16h10"></path>
+          </svg>
+          <div>
+            <h1 class="brand-title">Admin Panel</h1>
+            <p class="brand-sub">FlexiCarz Management</p>
+          </div>
+        </div>
+
+        <div class="auth-card">
+          <h2 class="auth-title">Admin Login</h2>
+          <p class="auth-subtitle">Enter admin credentials to access dashboard</p>
+
+          <form id="adminLoginForm" class="auth-form">
+            <div class="form-group">
+              <label for="adminEmail" class="form-label">Admin Email</label>
+              <input 
+                id="adminEmail" 
+                type="email" 
+                placeholder="admin@flexicarz.com" 
+                required 
+                class="form-input"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="adminPassword" class="form-label">Admin Password</label>
+              <input 
+                id="adminPassword" 
+                type="password" 
+                placeholder="••••••••" 
+                required 
+                class="form-input"
+              />
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full">
+              Access Dashboard
+            </button>
+
+            <div id="adminMsg" class="message"></div>
+          </form>
+
+          <p class="auth-footer">
+            <a href="login.html" class="auth-link">← Back to User Login</a>
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <section class="auth-hero">
+      <div class="hero-wrapper">
+        <h2 class="hero-title">Admin Dashboard</h2>
+        <p class="hero-description">Manage cars, bookings, and users efficiently</p>
+        
+        <ul class="hero-features">
+          <li>✓ Manage car inventory</li>
+          <li>✓ View all bookings</li>
+          <li>✓ User management</li>
+          <li>✓ Analytics & reports</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script>
+    document.getElementById('adminLoginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const email = document.getElementById('adminEmail').value;
+      const password = document.getElementById('adminPassword').value;
+      const msg = document.getElementById('adminMsg');
+      
+      try {
+        // Use Supabase authentication
+        const { data, error } = await window.supabase.auth.signInWithPassword({ email, password });
+        
+        if (error) {
+          msg.textContent = '❌ Invalid admin credentials';
+          msg.className = 'message show error';
+        } else if (data.user) {
+          // Check if user is admin
+          if (data.user.user_metadata?.role === 'admin' || email === 'admin@flexicarz.com') {
+            msg.textContent = '✅ Admin login successful!';
+            msg.className = 'message show success';
+            
+            setTimeout(() => {
+              window.location.href = 'admin-dashboard.html';
+            }, 1000);
+          } else {
+            msg.textContent = '❌ Access denied. Admin privileges required.';
+            msg.className = 'message show error';
+            window.supabase.auth.signOut();
+          }
+        }
+      } catch (error) {
+        msg.textContent = '❌ Login failed. Please try again.';
+        msg.className = 'message show error';
+      }
+    });
+  </script>
+</body>

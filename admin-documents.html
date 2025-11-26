@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document Verification - Admin</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <div class="logo">
+          <span>FlexiCarz Admin</span>
+        </div>
+        <div class="nav-actions">
+          <a href="admin-dashboard.html" class="btn-nav">Dashboard</a>
+          <button id="adminLogoutBtn" class="btn-logout">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    <div class="container">
+      <h1>Document Verification</h1>
+      
+      <div class="verification-filters">
+        <select id="statusFilter">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+
+      <div id="documentsList" class="documents-list"></div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script>
+    function formatLocalDateTime(dateString) {
+      return new Date(dateString).toLocaleString();
+    }
+
+    async function checkAdminAuth() {
+      const { data: { user } } = await window.supabase.auth.getUser();
+      if (!user || user.user_metadata?.role !== 'admin') {
+        window.location.href = 'admin.html';
+      }
+    }
+    checkAdminAuth();
+
+    document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
+      await window.supabase.auth.signOut();
+      window.location.href = 'admin.html';
+    });
+
+    async function loadDocuments(status = '') {
+      try {
+        let query = window.supabase
+          .from('user_documents')
+          .select('*');
+
+        if (status) {
+          query = query.eq('status', status);
+        }
+
+        const { data: documents } = await query;
+        const documentsList = document.getElementById('documentsList');
+
+        if (!documents || documents.length === 0) {
+          documentsList.innerHTML = '<p>No documents found</p>';
+          return;
+        }
+
+        const userIds = [...new Set(documents.map(d => d.user_id))];
+        const { data: profiles } = await window.supabase
+          .from('user_profiles')
+          .select('user_id, full_name')
+          .in('user_id', userIds);
+
+        const profileMap = {};
+        profiles?.forEach(p => profileMap[p.user_id] = p);
+
+        documentsList.innerHTML = documents.map(doc => {
+          const profile = profileMap[doc.user_id];
+          return `
+          <div class="document-card">
+            <div class="doc-header">
+              <h3>${profile?.full_name || 'Unknown'}</h3>
+              <span class="doc-status status-${doc.status}">${doc.status}</span>
+            </div>
+            <div class="doc-info">
+              <p><strong>Document Type:</strong> ${doc.document_type || 'N/A'}</p>
+              <p><strong>Submitted:</strong> ${formatLocalDateTime(doc.created_at)}</p>
+            </div>
+            <div class="doc-preview">
+              <a href="${getDocumentUrl(doc.document_url)}" target="_blank" class="btn btn-sm">View Document</a>
+            </div>
+            ${doc.status === 'pending' ? `
+              <div class="doc-actions">
+                <button onclick="approveDocument('${doc.id}', '${doc.user_id}')" class="btn btn-sm btn-success">Approve</button>
+                <button onclick="rejectDocument('${doc.id}', '${doc.user_id}')" class="btn btn-sm btn-danger">Reject</button>
+              </div>
+            ` : ''}
+          </div>
+        `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading documents:', error);
+      }
+    }
+
+    function getDocumentUrl(path) {
+      return `https://lxuebhvwykqblyrgqsfz.supabase.co/storage/v1/object/public/documents/${path}`;
+    }
+
+    window.approveDocument = async (docId, userId) => {
+      try {
+        await window.supabase
+          .from('user_documents')
+          .update({ status: 'approved' })
+          .eq('id', docId);
+
+        await window.supabase
+          .from('user_profiles')
+          .update({ verification_status: 'verified', verified_at: new Date().toISOString() })
+          .eq('user_id', userId);
+
+        alert('Document approved! User is now verified.');
+        loadDocuments(document.getElementById('statusFilter').value);
+      } catch (error) {
+        console.error('Error approving document:', error);
+        alert('Error approving document');
+      }
+    };
+
+    window.rejectDocument = async (docId, userId) => {
+      try {
+        await window.supabase
+          .from('user_documents')
+          .update({ status: 'rejected' })
+          .eq('id', docId);
+
+        await window.supabase
+          .from('user_profiles')
+          .update({ verification_status: 'pending' })
+          .eq('user_id', userId);
+
+        alert('Document rejected!');
+        loadDocuments(document.getElementById('statusFilter').value);
+      } catch (error) {
+        console.error('Error rejecting document:', error);
+        alert('Error rejecting document');
+      }
+    };
+
+    document.getElementById('statusFilter').addEventListener('change', (e) => {
+      loadDocuments(e.target.value);
+    });
+
+    loadDocuments();
+  </script>
+
+  <style>
+    .admin-main {
+      min-height: calc(100vh - 80px);
+      padding: 40px 0;
+      background: #f5f5f5;
+    }
+
+    .admin-main h1 {
+      margin-bottom: 30px;
+      color: #333;
+    }
+
+    .verification-filters {
+      margin-bottom: 30px;
+    }
+
+    .verification-filters select {
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      font-size: 1rem;
+    }
+
+    .documents-list {
+      display: grid;
+      gap: 20px;
+    }
+
+    .document-card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .doc-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 15px;
+    }
+
+    .doc-header h3 {
+      margin: 0;
+      color: #333;
+    }
+
+    .doc-status {
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .doc-info {
+      margin-bottom: 15px;
+    }
+
+    .doc-info p {
+      margin: 8px 0;
+      color: #666;
+    }
+
+    .doc-preview {
+      margin-bottom: 15px;
+    }
+
+    .doc-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .btn-sm {
+      padding: 8px 16px;
+      font-size: 0.9rem;
+    }
+
+    .btn-success {
+      background: #28a745;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-success:hover {
+      background: #218838;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+    }
+  </style>
+</body>
+</html>

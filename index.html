@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlexiCarz — Premium Car Rentals</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- Navigation Header -->
+  <header class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0b6efd" stroke-width="2">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+            <path d="M6 10h12M6 14h12M9 10v4M15 10v4" stroke="#0b6efd"></path>
+          </svg>
+          <span>FlexiCarz</span>
+        </div>
+
+        <nav class="nav-links">
+          <a href="index.html" class="nav-link active">Home</a>
+          <a href="vehicles.html" class="nav-link">Vehicles</a>
+          <a href="booking.html" class="nav-link">Booking</a>
+          <a href="about.html" class="nav-link">About</a>
+        </nav>
+
+        <div class="nav-actions">
+          <span class="user-name" id="userName"></span>
+          <a href="verify-documents.html" id="verifyDocsBtn" class="btn btn-verify">Verify Documents</a>
+          <button id="logoutBtn" class="btn-logout">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section id="home" class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container">
+      <div class="hero-content">
+        <h1 class="hero-title">Find Your Perfect Ride</h1>
+        <p class="hero-subtitle">Premium self-drive cars with transparent pricing and 24/7 support</p>
+        <div class="hero-actions">
+          <a href="vehicles.html" class="btn btn-primary btn-lg">Explore Vehicles</a>
+          <a href="booking.html" class="btn btn-secondary btn-lg">Book Now</a>
+        </div>
+      </div>
+      <div class="animated-car">
+        <img src="cars/car_logo.png" alt="Car" class="car-icon">
+      </div>
+    </div>
+  </section>
+
+
+
+
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>About Us</h4>
+          <p>FlexiCarz is your trusted partner for premium car rentals with transparent pricing and exceptional service.
+          </p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="vehicles.html">Vehicles</a></li>
+            <li><a href="booking.html">Booking</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li>📧 akshaykumaraksh003@gmail.com</li>
+            <li>📞 7022853515 (Akshay)</li>
+            <li>📞 9739930466 (Vaibhav)</li>
+            <li>🕐 24/7 Available</li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Follow Us</h4>
+          <div class="social-links">
+            <a href="#">Twitter</a>
+            <a href="#">Facebook</a>
+            <a href="#">Instagram</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 FlexiCarz Rentals. All Rights Reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+  <script>
+    const hero = document.querySelector('.hero');
+    const car = document.querySelector('.animated-car img');
+    let lastX = 0;
+
+    hero.addEventListener('mousemove', (e) => {
+      const moveX = (e.clientX - lastX) * 0.5;
+      const currentTransform = car.style.transform || 'translateX(0)';
+      const currentX = parseFloat(currentTransform.match(/-?\d+/) || 0);
+      const newX = Math.max(-200, Math.min(200, currentX + moveX));
+      car.style.transform = `translateX(${newX}px) scaleX(${moveX < 0 ? 1 : -1})`;
+      lastX = e.clientX;
+    });
+
+    hero.addEventListener('mouseleave', () => {
+      car.style.transform = 'translateX(0) scaleX(-1)';
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Upload Documents - Flexi Carz</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="upload-layout">
+    <section class="upload-panel">
+      <div class="upload-content">
+        <div class="upload-progress">
+          <div class="progress-step active">
+            <span class="step-num">1</span>
+            <span class="step-text">Booking</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step active">
+            <span class="step-num">2</span>
+            <span class="step-text">Documents</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step">
+            <span class="step-num">3</span>
+            <span class="step-text">Payment</span>
+          </div>
+        </div>
+
+        <div class="upload-card">
+          <h2 class="upload-title">Verify Your Identity</h2>
+          <p class="upload-subtitle">Upload your documents to complete the verification process</p>
+
+          <form id="uploadForm" class="upload-form" novalidate>
+            <!-- Driving License -->
+            <div class="upload-group">
+              <label class="upload-label">
+                <span class="label-text">📄 Driving License</span>
+                <span class="label-hint">JPG, PNG or PDF (Max 5MB)</span>
+              </label>
+              <div class="upload-box" id="licenseBox">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p class="upload-text">Drag & drop or <strong>click to upload</strong></p>
+                <p class="upload-hint">Supported formats: JPG, PNG, PDF</p>
+                <input 
+                  type="file" 
+                  id="licenseFile" 
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  required 
+                  hidden
+                />
+              </div>
+              <span class="error-msg" id="licenseError"></span>
+              <div class="file-preview" id="licensePreview"></div>
+            </div>
+
+            <!-- Aadhaar Card -->
+            <div class="upload-group">
+              <label class="upload-label">
+                <span class="label-text">🆔 Aadhaar Card</span>
+                <span class="label-hint">JPG, PNG or PDF (Max 5MB)</span>
+              </label>
+              <div class="upload-box" id="aadhaarBox">
+                <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p class="upload-text">Drag & drop or <strong>click to upload</strong></p>
+                <p class="upload-hint">Supported formats: JPG, PNG, PDF</p>
+                <input 
+                  type="file" 
+                  id="aadhaarFile" 
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  required 
+                  hidden
+                />
+              </div>
+              <span class="error-msg" id="aadhaarError"></span>
+              <div class="file-preview" id="aadhaarPreview"></div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+              <span class="btn-text">Verify Documents & Continue</span>
+              <span class="btn-loader" id="btnLoader" style="display:none;">
+                <span class="spinner"></span>
+              </span>
+            </button>
+
+            <div id="uploadMsg" class="message" role="status" aria-live="polite"></div>
+
+            <p class="upload-note">
+              ✓ Your documents are secure and encrypted<br>
+              ✓ Only used for verification purposes
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="upload-hero">
+      <div class="hero-wrapper">
+        <h2 class="hero-title">Secure<br>Verification</h2>
+        <p class="hero-description">We protect your personal information with industry-leading security standards.</p>
+        
+        <ul class="hero-features">
+          <li>✓ 256-bit encryption</li>
+          <li>✓ GDPR compliant</li>
+          <li>✓ Auto-delete after 30 days</li>
+          <li>✓ No data sharing</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="verify-documents.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Document upload handling
+    const uploadForm = document.getElementById('uploadForm');
+    const licenseBox = document.getElementById('licenseBox');
+    const aadhaarBox = document.getElementById('aadhaarBox');
+    const licenseFile = document.getElementById('licenseFile');
+    const aadhaarFile = document.getElementById('aadhaarFile');
+    const submitBtn = document.getElementById('submitBtn');
+    const btnLoader = document.getElementById('btnLoader');
+    const btnText = submitBtn.querySelector('.btn-text');
+    const uploadMsg = document.getElementById('uploadMsg');
+
+    let selectedLicense = null;
+    let selectedAadhaar = null;
+
+    // Click to upload
+    licenseBox.addEventListener('click', () => licenseFile.click());
+    aadhaarBox.addEventListener('click', () => aadhaarFile.click());
+
+    // File selection
+    licenseFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const validation = validateDocument(file);
+        if (!validation.valid) {
+          document.getElementById('licenseError').textContent = validation.error;
+          licenseFile.value = '';
+        } else {
+          document.getElementById('licenseError').textContent = '';
+          selectedLicense = file;
+          showFilePreview('licensePreview', file);
+        }
+      }
+    });
+
+    aadhaarFile.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const validation = validateDocument(file);
+        if (!validation.valid) {
+          document.getElementById('aadhaarError').textContent = validation.error;
+          aadhaarFile.value = '';
+        } else {
+          document.getElementById('aadhaarError').textContent = '';
+          selectedAadhaar = file;
+          showFilePreview('aadhaarPreview', file);
+        }
+      }
+    });
+
+    function showFilePreview(previewId, file) {
+      const preview = document.getElementById(previewId);
+      preview.innerHTML = `
+        <div class="file-preview-icon">✓</div>
+        <div class="file-preview-info">
+          <div class="file-name">${file.name}</div>
+          <div class="file-size">${(file.size / 1024).toFixed(2)} KB</div>
+        </div>
+      `;
+      preview.classList.add('show');
+    }
+
+    // Form submission
+    uploadForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      if (!selectedLicense || !selectedAadhaar) {
+        uploadMsg.textContent = '❌ Please upload both documents';
+        uploadMsg.className = 'message show error';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      btnText.style.display = 'none';
+      btnLoader.style.display = 'flex';
+
+      const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+      
+      // Submit documents
+      const result1 = await submitDocumentForVerification(currentUser.id, selectedLicense);
+      const result2 = await submitDocumentForVerification(currentUser.id, selectedAadhaar);
+
+      if (result1.success && result2.success) {
+        uploadMsg.textContent = '✅ Documents uploaded successfully!';
+        uploadMsg.className = 'message show success';
+        setTimeout(() => {
+          window.location.href = 'payment.html';
+        }, 1500);
+      } else {
+        uploadMsg.textContent = '❌ Upload failed. Please try again.';
+        uploadMsg.className = 'message show error';
+      }
+
+      submitBtn.disabled = false;
+      btnText.style.display = 'inline';
+      btnLoader.style.display = 'none';
+    });
+  </script>
+</body>
+</html>

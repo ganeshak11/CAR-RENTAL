@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlexiCarz — About Us</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      background: #f7f9fc;
+      color: #222;
+    }
+    .container {
+      width: 90%;
+      max-width: 1200px;
+      margin: auto;
+    }
+
+    /* NAVBAR */
+    .navbar {
+      background: #ffffff;
+      border-bottom: 1px solid #e3e7ee;
+      padding: 15px 0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .navbar-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 20px;
+      font-weight: 600;
+      color: #0b6efd;
+    }
+    .nav-links a {
+      margin-left: 22px;
+      text-decoration: none;
+      color: #333;
+      font-weight: 500;
+      transition: .3s;
+    }
+    .nav-links a:hover,
+    .nav-links .active {
+      color: #0b6efd;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-verify {
+      background: #0b6efd;
+      padding: 8px 14px;
+      color: white;
+      border-radius: 6px;
+      font-weight: 500;
+      text-decoration: none;
+      transition: .3s;
+    }
+    .btn-verify:hover {
+      background: #075cd2;
+    }
+    .btn-logout {
+      background: #ff4b4b;
+      border: none;
+      color: white;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: .3s;
+    }
+    .btn-logout:hover {
+      background: #d93c3c;
+    }
+
+    /* ABOUT SECTION */
+    .about-section {
+      padding: 70px 0;
+      text-align: center;
+    }
+    .about-header h1 {
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #0b6efd;
+    }
+    .about-header p {
+      font-size: 18px;
+      color: #555;
+      margin-bottom: 40px;
+    }
+
+    .about-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+    }
+    .about-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      text-align: left;
+    }
+    .about-card h3 {
+      margin-bottom: 12px;
+      font-size: 22px;
+      color: #0b6efd;
+    }
+    .about-list li {
+      list-style: none;
+      margin: 8px 0;
+      font-size: 15px;
+      color: #333;
+    }
+
+    /* FOOTER */
+    .footer {
+      background: #0b6efd;
+      color: white;
+      padding: 50px 0 20px;
+      margin-top: 60px;
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 30px;
+    }
+    .footer-col h4 {
+      margin-bottom: 15px;
+      font-size: 18px;
+      font-weight: 600;
+    }
+    .footer-col ul {
+      padding: 0;
+      list-style: none;
+    }
+    .footer-col ul li {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    .footer-col a {
+      color: #dbe9ff;
+      text-decoration: none;
+      transition: .3s;
+    }
+    .footer-col a:hover {
+      color: white;
+    }
+    .social-links a {
+      margin-right: 12px;
+      font-size: 14px;
+      color: #dbe9ff;
+    }
+    .footer-bottom {
+      margin-top: 25px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.3);
+      padding-top: 15px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <header class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <div class="logo">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0b6efd" stroke-width="2">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"></path>
+            <path d="M6 10h12M6 14h12M9 10v4M15 10v4" stroke="#0b6efd"></path>
+          </svg>
+          <span>FlexiCarz</span>
+        </div>
+
+        <nav class="nav-links">
+          <a href="index.html" class="nav-link">Home</a>
+          <a href="vehicles.html" class="nav-link">Vehicles</a>
+          <a href="booking.html" class="nav-link">Booking</a>
+          <a href="about.html" class="nav-link active">About</a>
+        </nav>
+
+        <div class="nav-actions">
+          <span class="user-name" id="userName"></span>
+          <a href="verify-documents.html" id="verifyDocsBtn" class="btn-verify">Verify Documents</a>
+          <button id="logoutBtn" class="btn-logout">Logout</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section class="about-section">
+    <div class="container">
+      <div class="about-header">
+        <h1>About FlexiCarz</h1>
+        <p>Your trusted partner for premium car rentals</p>
+      </div>
+
+      <div class="about-content">
+        <div class="about-card">
+          <h3>Our Mission</h3>
+          <p>To provide affordable, transparent, and hassle-free car rental services with exceptional customer support and a well-maintained fleet of vehicles.</p>
+        </div>
+
+        <div class="about-card">
+          <h3>Why Choose Us?</h3>
+          <ul class="about-list">
+            <li>✓ Transparent pricing with no hidden charges</li>
+            <li>✓ Well-maintained and regularly serviced vehicles</li>
+            <li>✓ Instant booking confirmation</li>
+            <li>✓ 24/7 customer support</li>
+            <li>✓ Flexible cancellation policy</li>
+            <li>✓ Comprehensive insurance included</li>
+          </ul>
+        </div>
+
+        <div class="about-card">
+          <h3>Contact Us</h3>
+          <p>📧 akshaykumaraksh003@gmail.com</p>
+          <p>📞 7022853515</p>
+          <p>🕐 Available 24/7</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>About Us</h4>
+          <p>FlexiCarz is your trusted partner for premium car rentals with transparent pricing and exceptional service.</p>
+        </div>
+        <div class="footer-col">
+          <h4>Quick Links</h4>
+          <ul>
+            <li><a href="index.html">Home</a></li>
+            <li><a href="vehicles.html">Vehicles</a></li>
+            <li><a href="booking.html">Booking</a></li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Contact</h4>
+          <ul>
+            <li>📧 akshaykumaraksh003@gmail.com</li>
+            <li>📞 7022853515</li>
+            <li>🕐 24/7 Available</li>
+          </ul>
+        </div>
+        <div class="footer-col">
+          <h4>Follow Us</h4>
+          <div class="social-links">
+            <a href="#">Twitter</a>
+            <a href="#">Facebook</a>
+            <a href="#">Instagram</a>
+          </div>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>&copy; 2025 FlexiCarz Rentals. All Rights Reserved.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

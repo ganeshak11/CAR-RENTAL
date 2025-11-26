@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment - FlexiCarz</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="upload-layout">
+    <section class="upload-panel">
+      <div class="upload-content">
+        <div class="upload-progress">
+          <div class="progress-step active">
+            <span class="step-num">✓</span>
+            <span class="step-text">Booking</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step active">
+            <span class="step-num">✓</span>
+            <span class="step-text">Documents</span>
+          </div>
+          <div class="progress-line"></div>
+          <div class="progress-step active">
+            <span class="step-num">3</span>
+            <span class="step-text">Payment</span>
+          </div>
+        </div>
+
+        <div class="upload-card">
+          <h2 class="upload-title">💳 Complete Payment</h2>
+          <p class="upload-subtitle">Secure payment gateway - Your data is encrypted</p>
+
+          <!-- Booking Summary -->
+          <div class="payment-summary">
+            <h3>📊 Booking Summary</h3>
+            <div id="bookingDetails"></div>
+          </div>
+
+          <!-- Payment Methods -->
+          <div class="payment-methods">
+            <h3>Select Payment Method</h3>
+            <div class="method-tabs">
+              <button class="method-tab active" data-method="card">💳 Card</button>
+              <button class="method-tab" data-method="upi">📱 UPI</button>
+              <button class="method-tab" data-method="netbanking">🏦 Net Banking</button>
+            </div>
+          </div>
+
+          <form id="paymentForm" class="upload-form" novalidate>
+            <!-- Card Payment -->
+            <div class="payment-section" id="cardSection">
+              <div class="form-group">
+                <label class="form-label">Cardholder Name</label>
+                <input type="text" id="cardName" class="form-input" placeholder="John Doe" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Card Number</label>
+                <input type="text" id="cardNumber" class="form-input" placeholder="1234 5678 9012 3456" maxlength="19" required>
+              </div>
+              <div class="payment-row">
+                <div class="form-group">
+                  <label class="form-label">Expiry Date</label>
+                  <input type="text" id="expiry" class="form-input" placeholder="MM/YY" maxlength="5" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label">CVV</label>
+                  <input type="password" id="cvv" class="form-input" placeholder="123" maxlength="3" required>
+                </div>
+              </div>
+            </div>
+
+            <!-- UPI Payment -->
+            <div class="payment-section" id="upiSection" style="display:none;">
+              <div class="form-group">
+                <label class="form-label">UPI ID</label>
+                <input type="text" class="form-input" placeholder="yourname@upi" required>
+              </div>
+            </div>
+
+            <!-- Net Banking -->
+            <div class="payment-section" id="netbankingSection" style="display:none;">
+              <div class="form-group">
+                <label class="form-label">Select Bank</label>
+                <select class="form-input" required>
+                  <option value="">Choose your bank...</option>
+                  <option value="sbi">State Bank of India</option>
+                  <option value="hdfc">HDFC Bank</option>
+                  <option value="icici">ICICI Bank</option>
+                  <option value="axis">Axis Bank</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-full" id="submitBtn">
+              <span class="btn-text">🔒 Pay Securely</span>
+              <span class="btn-loader" id="btnLoader" style="display:none;">
+                <span class="spinner"></span>
+              </span>
+            </button>
+
+            <div id="paymentMsg" class="message" role="status" aria-live="polite"></div>
+
+            <p class="upload-note">
+              ✓ 256-bit SSL encryption<br>
+              ✓ PCI DSS compliant<br>
+              ✓ 100% secure payment
+            </p>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="upload-hero">
+      <div class="hero-wrapper">
+        <h2 class="hero-title">Safe &<br>Secure</h2>
+        <p class="hero-description">Your payment information is protected with bank-level security.</p>
+        
+        <ul class="hero-features">
+          <li>✓ Instant confirmation</li>
+          <li>✓ No hidden charges</li>
+          <li>✓ Refund protection</li>
+          <li>✓ 24/7 support</li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+  <script>
+    // Payment method tabs
+    const methodTabs = document.querySelectorAll('.method-tab');
+    const cardSection = document.getElementById('cardSection');
+    const upiSection = document.getElementById('upiSection');
+    const netbankingSection = document.getElementById('netbankingSection');
+
+    methodTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        methodTabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        
+        const method = tab.dataset.method;
+        cardSection.style.display = method === 'card' ? 'block' : 'none';
+        upiSection.style.display = method === 'upi' ? 'block' : 'none';
+        netbankingSection.style.display = method === 'netbanking' ? 'block' : 'none';
+      });
+    });
+
+    // Format card number
+    const cardNumber = document.getElementById('cardNumber');
+    if (cardNumber) {
+      cardNumber.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\s/g, '');
+        let formattedValue = value.match(/.{1,4}/g)?.join(' ') || value;
+        e.target.value = formattedValue;
+      });
+    }
+
+    // Format expiry
+    const expiry = document.getElementById('expiry');
+    if (expiry) {
+      expiry.addEventListener('input', (e) => {
+        let value = e.target.value.replace(/\D/g, '');
+        if (value.length >= 2) {
+          value = value.slice(0, 2) + '/' + value.slice(2, 4);
+        }
+        e.target.value = value;
+      });
+    }
+  </script>
+</body>
+</html>
