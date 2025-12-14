@@ -2544,6 +2544,13 @@ body {
   .logo {
     font-size: 18px;
     flex: 1;
+    gap: 6px;
+  }
+  
+  .logo svg {
+    width: 24px;
+    height: 24px;
+    margin-top: 2px;
   }
   
   .logo span { display: inline; }
@@ -2673,6 +2680,13 @@ body {
   .logo {
     font-size: 14px;
     flex: 1;
+    gap: 4px;
+  }
+  
+  .logo svg {
+    width: 20px;
+    height: 20px;
+    margin-top: 3px;
   }
   
   .logo span { display: inline; }
