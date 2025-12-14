@@ -7,21 +7,25 @@
   <link rel="icon" href="favicon.ico">
   <title>Admin Dashboard - FlexiCarz</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Minimal fixes so file works standalone even if style.css missing */
+    body { font-family: Arial, Helvetica, sans-serif; margin:0; }
+    .container { max-width:1100px; margin:0 auto; padding:0 16px; }
+    .navbar { height:64px; display:flex; align-items:center; background:#0b6efd; color:white; }
+    .navbar .container { display:flex; justify-content:space-between; align-items:center; }
+    .btn-logout { background:transparent; border:1px solid rgba(255,255,255,0.3); padding:8px 12px; color:white; border-radius:6px; cursor:pointer; }
+    /* keep the rest as in your original css (you already provided long css in the file) */
+  </style>
 </head>
 <body>
   <header class="navbar">
     <div class="container">
       <div class="navbar-content">
         <div class="logo">
-          <span>FlexiCarz Admin</span>
+          <span style="font-weight:700;">FlexiCarz Admin</span>
         </div>
-        <button class="hamburger-menu" id="hamburgerBtn" aria-label="Toggle menu">
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-        </button>
-        <div class="nav-actions" id="navMenu">
-          <a href="admin-documents.html" class="btn-nav">Document Verification</a>
+        <div class="nav-actions">
+          <a href="admin-documents.html" class="btn-nav" style="color:white; text-decoration:none; margin-right:12px;">Document Verification</a>
           <button id="adminLogoutBtn" class="btn-logout">Logout</button>
         </div>
       </div>
@@ -97,94 +101,125 @@
     </div>
   </main>
 
+  <!-- keep your supabase init in supabase.js which should set window.supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
+
   <script>
+    /*****************************************************************
+     * CONFIG
+     * Change TOTAL_CARS if you want a different fixed inventory count
+     *****************************************************************/
+    const TOTAL_CARS = 30; // ← your fixed total cars
+
     let allBookings = [];
     let allUsers = [];
 
     function formatLocalDateTime(dateString) {
-      return new Date(dateString).toLocaleString();
+      if (!dateString) return '-';
+      try { return new Date(dateString).toLocaleString(); }
+      catch(e) { return dateString; }
     }
 
+    // ---------- AUTH CHECK ----------
     async function checkAdminAuth() {
-      const { data: { user } } = await window.supabase.auth.getUser();
-      if (!user || user.user_metadata?.role !== 'admin') {
-        window.location.href = 'admin.html';
+      try {
+        const { data: { user }, error } = await window.supabase.auth.getUser();
+        if (error) {
+          console.error('Auth getUser error', error);
+          // allow page to continue (in case you are testing locally) — but redirect if no user
+        }
+        if (!user || user.user_metadata?.role !== 'admin') {
+          // redirect to admin login page
+          window.location.href = 'admin.html';
+        }
+      } catch (err) {
+        console.error('checkAdminAuth err', err);
+        // fallback: do nothing
       }
     }
     checkAdminAuth();
 
     document.getElementById('adminLogoutBtn').addEventListener('click', async () => {
-      await window.supabase.auth.signOut();
+      try {
+        await window.supabase.auth.signOut();
+      } catch (e) { console.warn('signOut error', e); }
       window.location.href = 'admin.html';
     });
 
+    // ---------- DASHBOARD: load counts (TotalCars, TotalBookings, AvailableCars, Revenue) ----------
     async function loadDashboardData() {
       try {
-        const { data: cars, error: carsError } = await window.supabase.from('cars').select('*');
-        const { data: bookings, error: bookingsError } = await window.supabase.from('bookings').select('*');
-        
-        if (cars) {
-          document.getElementById('totalCars').textContent = cars.length;
-          // FIX: only count cars where is_available is true or 'true'
-          const availableCount = cars.filter(
-            c => c.is_available === true || c.is_available === 'true'
-          ).length;
-          document.getElementById('availableCars').textContent = availableCount;
+        // get bookings (we need statuses & amounts)
+        const { data: bookings = [], error: bookingsError } = await window.supabase.from('bookings').select('*');
+        if (bookingsError) {
+          console.error('bookingsError', bookingsError);
         }
-        
-        if (bookings && bookings.length > 0) {
-          allBookings = bookings;
-          document.getElementById('totalBookings').textContent = bookings.length;
-          
-          const totalRevenue = bookings.reduce((sum, b) => sum + (b.total_amount || 0), 0);
-          document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toLocaleString()}`;
-          
-          loadRecentBookings(bookings);
-        } else {
-          document.getElementById('totalBookings').textContent = '0';
-          document.getElementById('recentBookingsList').innerHTML = '<p>No bookings found</p>';
-        }
+
+        allBookings = bookings || [];
+        const totalBookings = allBookings.length;
+
+        // Only confirmed bookings reduce availability
+        const confirmedCount = allBookings.filter(b => String(b.status).toLowerCase() === 'confirmed').length;
+        const availableCount = Math.max(TOTAL_CARS - confirmedCount, 0);
+
+        // revenue (sum of total_amount; guard numeric)
+        const totalRevenue = allBookings.reduce((sum, b) => {
+          const a = parseFloat(b.total_amount);
+          return sum + (isNaN(a) ? 0 : a);
+        }, 0);
+
+        // update UI
+        document.getElementById('totalCars').textContent = TOTAL_CARS;
+        document.getElementById('totalBookings').textContent = totalBookings;
+        document.getElementById('availableCars').textContent = availableCount;
+        document.getElementById('totalRevenue').textContent = `₹${totalRevenue.toLocaleString()}`;
+
+        loadRecentBookings(allBookings);
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       }
     }
-    
+
     function loadRecentBookings(bookings) {
       const bookingsList = document.getElementById('recentBookingsList');
       if (!bookings || bookings.length === 0) {
         bookingsList.innerHTML = '<p>No bookings available</p>';
         return;
       }
-      
-      const recent = bookings.slice(-10).reverse();
-      
+
+      // sort by created_at (newest first). fallback to array order if created_at missing
+      const recent = [...bookings].sort((a,b) => {
+        const ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return tb - ta;
+      }).slice(0, 10);
+
       bookingsList.innerHTML = recent.map(booking => `
         <div class="booking-card">
           <div class="booking-header">
             <div class="booking-customer">
-              <h4>${booking.customer_name}</h4>
-              <p>${booking.customer_email}</p>
+              <h4>${escapeHtml(booking.customer_name || '—')}</h4>
+              <p>${escapeHtml(booking.customer_email || '—')}</p>
             </div>
-            <span class="booking-status status-${booking.status}">${booking.status}</span>
+            <span class="booking-status status-${escapeHtml(booking.status || '')}">${escapeHtml(booking.status || '')}</span>
           </div>
           <div class="booking-details">
             <div class="detail-row">
               <span class="label">Age:</span>
-              <span class="value">${booking.customer_age} years</span>
+              <span class="value">${escapeHtml(booking.customer_age ? booking.customer_age + ' years' : '—')}</span>
             </div>
             <div class="detail-row">
               <span class="label">Dates:</span>
-              <span class="value">${booking.start_date} to ${booking.end_date}</span>
+              <span class="value">${escapeHtml(booking.start_date || '—')} to ${escapeHtml(booking.end_date || '—')}</span>
             </div>
             <div class="detail-row">
               <span class="label">Duration:</span>
-              <span class="value">${booking.total_days} days</span>
+              <span class="value">${escapeHtml(booking.total_days ? booking.total_days + ' days' : '—')}</span>
             </div>
             <div class="detail-row">
               <span class="label">Amount:</span>
-              <span class="value amount">₹${booking.total_amount.toLocaleString()}</span>
+              <span class="value amount">₹${(booking.total_amount || 0).toLocaleString()}</span>
             </div>
             <div class="detail-row">
               <span class="label">Booked:</span>
@@ -205,153 +240,143 @@
       `).join('');
     }
 
+    // ---------- TAB NAV ----------
     window.showTab = (tabName) => {
       document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById(tabName + '-tab').classList.add('active');
-      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-      
+      const target = document.getElementById(tabName + '-tab');
+      if (target) target.classList.add('active');
+      const btn = document.querySelector(`[data-tab="${tabName}"]`);
+      if (btn) btn.classList.add('active');
+
       if (tabName === 'bookings') loadAllBookings();
       if (tabName === 'users') loadAllUsers();
     };
-    
+
+    // ---------- ALL BOOKINGS ----------
     async function loadAllBookings() {
-      const { data: bookings, error } = await window.supabase.from('bookings').select('*');
-      
-      if (!bookings || bookings.length === 0) {
-        document.getElementById('allBookingsList').innerHTML = '<p>No bookings found</p>';
-        return;
+      try {
+        const { data: bookings = [], error } = await window.supabase.from('bookings').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error('loadAllBookings error', error);
+          document.getElementById('allBookingsList').innerHTML = '<p>Error loading bookings</p>';
+          return;
+        }
+
+        allBookings = bookings;
+        const statusFilter = document.getElementById('statusFilter').value;
+        const filtered = statusFilter ? bookings.filter(b => b.status === statusFilter) : bookings;
+
+        const bookingsList = document.getElementById('allBookingsList');
+        if (!filtered || filtered.length === 0) {
+          bookingsList.innerHTML = '<p>No bookings found</p>';
+          return;
+        }
+
+        bookingsList.innerHTML = filtered.map(booking => `
+
+          <div class="booking-card">
+            <div class="booking-header">
+              <div class="booking-customer">
+                <h4>${escapeHtml(booking.customer_name || '—')}</h4>
+                <p>${escapeHtml(booking.customer_email || '—')}</p>
+              </div>
+              <span class="booking-status status-${escapeHtml(booking.status || '')}">${escapeHtml(booking.status || '')}</span>
+            </div>
+
+            <div class="booking-details">
+              <div class="detail-row">
+                <span class="label">Age:</span>
+                <span class="value">${escapeHtml(booking.customer_age ? booking.customer_age + ' years' : '—')}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Dates:</span>
+                <span class="value">${escapeHtml(booking.start_date || '—')} to ${escapeHtml(booking.end_date || '—')}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Duration:</span>
+                <span class="value">${escapeHtml(booking.total_days ? booking.total_days + ' days' : '—')}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Amount:</span>
+                <span class="value amount">₹${(booking.total_amount || 0).toLocaleString()}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Booked:</span>
+                <span class="value">${formatLocalDateTime(booking.created_at)}</span>
+              </div>
+            </div>
+
+            <div class="booking-actions">
+              <select onchange="updateBookingStatus('${booking.id}', this.value)" class="status-select">
+                <option value="pending"   ${booking.status === 'pending' ? 'selected' : ''}>Pending</option>
+                <option value="confirmed" ${booking.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+                <option value="completed" ${booking.status === 'completed' ? 'selected' : ''}>Completed</option>
+                <option value="cancelled" ${booking.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+              </select>
+
+              ${booking.status === 'confirmed' ? `<button onclick="completeBooking('${booking.id}')" class="btn btn-success btn-sm">Return Car</button>` : ''}
+              <button onclick="deleteBooking('${booking.id}')" class="btn btn-danger btn-sm">Delete</button>
+            </div>
+          </div>
+
+        `).join('');
+      } catch (err) {
+        console.error('loadAllBookings exception', err);
+        document.getElementById('allBookingsList').innerHTML = '<p>Error loading bookings</p>';
       }
-      
-      allBookings = bookings;
-      const statusFilter = document.getElementById('statusFilter').value;
-      const filtered = statusFilter ? bookings.filter(b => b.status === statusFilter) : bookings;
-      
-      const bookingsList = document.getElementById('allBookingsList');
-      bookingsList.innerHTML = filtered.map(booking => `
-        <div class="booking-card">
-          <div class="booking-header">
-            <div class="booking-customer">
-              <h4>${booking.customer_name}</h4>
-              <p>${booking.customer_email}</p>
-            </div>
-            <span class="booking-status status-${booking.status}">${booking.status}</span>
-          </div>
-          <div class="booking-details">
-            <div class="detail-row">
-              <span class="label">Age:</span>
-              <span class="value">${booking.customer_age} years</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Dates:</span>
-              <span class="value">${booking.start_date} to ${booking.end_date}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Duration:</span>
-              <span class="value">${booking.total_days} days</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Amount:</span>
-              <span class="value amount">₹${booking.total_amount.toLocaleString()}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Booked:</span>
-              <span class="value">${formatLocalDateTime(booking.created_at)}</span>
-            </div>
-          </div>
-          <div class="booking-actions">
-            <select onchange="updateBookingStatus('${booking.id}', this.value)" class="status-select">
-              <option value="pending"   ${booking.status === 'pending' ? 'selected' : ''}>Pending</option>
-              <option value="confirmed" ${booking.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
-              <option value="completed" ${booking.status === 'completed' ? 'selected' : ''}>Completed</option>
-              <option value="cancelled" ${booking.status === 'cancelled' ? 'selected' : ''}>Cancelled</option>
-            </select>
-            ${booking.status === 'confirmed' ? `<button onclick="completeBooking('${booking.id}')" class="btn btn-success btn-sm">Return Car</button>` : ''}
-            <button onclick="deleteBooking('${booking.id}')" class="btn btn-danger btn-sm">Delete</button>
-          </div>
-        </div>
-      `).join('');
     }
-    
-    // ---------- STATUS CHANGE ALSO UPDATES CAR AVAILABILITY ----------
+
+    // ---------- UPDATE BOOKING STATUS (and refresh counts) ----------
     window.updateBookingStatus = async (bookingId, status) => {
       try {
-        // Find booking to get car_id
-        const booking = allBookings.find(b => String(b.id) === String(bookingId));
-
-        await window.supabase
+        // Update status in bookings table
+        const { error: updateError } = await window.supabase
           .from('bookings')
           .update({ status })
           .eq('id', bookingId);
 
-        // If we know the car, sync is_available with status
-        if (booking && booking.car_id) {
-          if (status === 'confirmed') {
-            // Car is blocked
-            await window.supabase
-              .from('cars')
-              .update({ is_available: false })
-              .eq('id', booking.car_id);
-          } else if (status === 'completed' || status === 'cancelled' || status === 'pending') {
-            // Car is free again
-            await window.supabase
-              .from('cars')
-              .update({ is_available: true })
-              .eq('id', booking.car_id);
-          }
+        if (updateError) {
+          console.error('updateBookingStatus error', updateError);
+          alert('Error updating booking status');
+          return;
         }
 
+        // We intentionally do NOT rely on cars.is_available; available cars = TOTAL_CARS - confirmed bookings
+        // So simply refresh bookings and dashboard
         await loadAllBookings();
         await loadDashboardData();
       } catch (err) {
-        console.error('Error updating status:', err);
-        alert('❌ Error updating booking status');
+        console.error('updateBookingStatus exception', err);
+        alert('Error updating booking status');
       }
     };
 
+    // ---------- COMPLETE BOOKING (Return car) ----------
     window.completeBooking = async (bookingId) => {
       if (!confirm('Mark car as returned?')) return;
       try {
-        const { data: booking, error: bookingError } = await window.supabase
-          .from('bookings')
-          .select('car_id')
-          .eq('id', bookingId)
-          .single();
-
-        if (bookingError) {
-          console.error('Booking fetch error:', bookingError);
-          throw bookingError;
-        }
-
+        // mark booking completed
         const { error: statusError } = await window.supabase
           .from('bookings')
           .update({ status: 'completed' })
           .eq('id', bookingId);
 
         if (statusError) {
-          console.error('Status update error:', statusError);
           throw statusError;
         }
 
-        const { error: carError } = await window.supabase
-          .from('cars')
-          .update({ is_available: true })
-          .eq('id', booking.car_id);
-
-        if (carError) {
-          console.error('Car update error:', carError);
-          throw carError;
-        }
-
+        // refresh UI
+        await loadAllBookings();
+        await loadDashboardData();
         alert('✅ Car returned successfully!');
-        loadAllBookings();
-        loadDashboardData();
       } catch (error) {
         console.error('Error returning car:', error);
-        alert('❌ Error: ' + error.message);
+        alert('❌ Error: ' + (error.message || error));
       }
     };
 
+    // ---------- DELETE BOOKING ----------
     window.deleteBooking = async (bookingId) => {
       if (!confirm('Delete this booking?')) return;
       try {
@@ -365,59 +390,132 @@
         loadAllBookings();
         loadDashboardData();
       } catch (error) {
-        console.error('Delete error:', error);
-        alert('❌ Error: ' + error.message);
+        console.error('Delete exception:', error);
+        alert('❌ Error deleting booking: ' + (error.message || error));
       }
     };
-    
+
+    // ---------- USERS ----------
     async function loadAllUsers() {
-      const { data: users } = await window.supabase.from('user_profiles').select('*');
-      allUsers = users || [];
-      
-      const usersList = document.getElementById('usersList');
-      if (!users || users.length === 0) {
-        usersList.innerHTML = '<p>No users found</p>';
-        return;
-      }
-      
-      usersList.innerHTML = users.map(user => `
-        <div class="user-card">
-          <div class="user-header">
-            <h4>${user.full_name}</h4>
-            <span class="verification-badge status-${user.verification_status}">${user.verification_status}</span>
-          </div>
-          <div class="user-details">
-            <div class="detail-row">
-              <span class="label">Phone:</span>
-              <span class="value">${user.phone || 'N/A'}</span>
+      try {
+        const { data: users = [], error } = await window.supabase.from('user_profiles').select('*').order('created_at', { ascending: false });
+        if (error) {
+          console.error('loadAllUsers error', error);
+          document.getElementById('usersList').innerHTML = '<p>Error loading users</p>';
+          return;
+        }
+
+        allUsers = users || [];
+        const usersList = document.getElementById('usersList');
+        if (!users || users.length === 0) {
+          usersList.innerHTML = '<p>No users found</p>';
+          return;
+        }
+
+        usersList.innerHTML = users.map(user => `
+          <div class="user-card">
+            <div class="user-header">
+              <h4>${escapeHtml(user.full_name || user.name || '—')}</h4>
+              <span class="verification-badge status-${escapeHtml(user.verification_status || '')}">${escapeHtml(user.verification_status || '')}</span>
             </div>
-            <div class="detail-row">
-              <span class="label">Role:</span>
-              <span class="value">${user.role}</span>
-            </div>
-            <div class="detail-row">
-              <span class="label">Joined:</span>
-              <span class="value">${formatLocalDateTime(user.created_at)}</span>
-            </div>
-            ${user.verified_at ? `
+            <div class="user-details">
               <div class="detail-row">
-                <span class="label">Verified:</span>
-                <span class="value">${formatLocalDateTime(user.verified_at)}</span>
+                <span class="label">Phone:</span>
+                <span class="value">${escapeHtml(user.phone || 'N/A')}</span>
               </div>
-            ` : ''}
+              <div class="detail-row">
+                <span class="label">Role:</span>
+                <span class="value">${escapeHtml(user.role || 'N/A')}</span>
+              </div>
+              <div class="detail-row">
+                <span class="label">Joined:</span>
+                <span class="value">${formatLocalDateTime(user.created_at)}</span>
+              </div>
+              ${user.verified_at ? `
+                <div class="detail-row">
+                  <span class="label">Verified:</span>
+                  <span class="value">${formatLocalDateTime(user.verified_at)}</span>
+                </div>` : ''}
+            </div>
+            <div class="user-actions">
+              <button onclick="deleteUser('${user.user_id || user.id}')" class="btn btn-danger btn-sm">Delete User</button>
+            </div>
           </div>
-          <div class="user-actions">
-            <button onclick="deleteUser('${user.user_id}')" class="btn btn-danger btn-sm">Delete User</button>
-          </div>
-        </div>
-      `).join('');
+        `).join('');
+      } catch (err) {
+        console.error('loadAllUsers exception', err);
+      }
     }
 
     window.deleteUser = async (userId) => {
       if (!confirm('Delete this user? This action cannot be undone.')) return;
-      await window.supabase.from('user_profiles').delete().eq('user_id', userId);
-      loadAllUsers();
+      try {
+        const { error } = await window.supabase.from('user_profiles').delete().eq('user_id', userId);
+        if (error) {
+          console.error('deleteUser error', error);
+          alert('Error deleting user');
+          return;
+        }
+        await loadAllUsers();
+      } catch (err) {
+        console.error('deleteUser exception', err);
+      }
     };
+
+    // ---------- EXPORT BOOKINGS CSV ----------
+    window.exportBookings = () => {
+      try {
+        const statusFilter = document.getElementById('statusFilter').value;
+        const filtered = statusFilter ? allBookings.filter(b => b.status === statusFilter) : allBookings;
+
+        if (!filtered || filtered.length === 0) {
+          alert('No bookings to export');
+          return;
+        }
+
+        const headers = ['Customer Name', 'Email', 'Age', 'Start Date', 'End Date', 'Days', 'Amount', 'Status', 'Booked Date'];
+        const rows = filtered.map(b => [
+          b.customer_name || '',
+          b.customer_email || '',
+          b.customer_age || '',
+          b.start_date || '',
+          b.end_date || '',
+          b.total_days || '',
+          b.total_amount || '',
+          b.status || '',
+          new Date(b.created_at || '').toLocaleString()
+        ]);
+
+        const escapeCell = (cell) => {
+          if (cell === null || cell === undefined) return '';
+          const s = String(cell).replace(/"/g, '""');
+          return `"${s}"`;
+        };
+
+        const csvContent = [headers, ...rows].map(r => r.map(escapeCell).join(',')).join('\n');
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `bookings-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch (err) {
+        console.error('exportBookings error', err);
+        alert('Error exporting bookings');
+      }
+    };
+
+    // ---------- UI hooks ----------
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => showTab(btn.dataset.tab));
+    });
+
+    document.getElementById('statusFilter')?.addEventListener('change', () => {
+      loadAllBookings();
+    });
 
     window.refreshDashboard = () => {
       loadDashboardData();
@@ -427,326 +525,88 @@
       loadAllUsers();
     };
 
-    window.exportBookings = () => {
-      const statusFilter = document.getElementById('statusFilter').value;
-      const filtered = statusFilter ? allBookings.filter(b => b.status === statusFilter) : allBookings;
-      
-      if (filtered.length === 0) {
-        alert('No bookings to export');
-        return;
-      }
+    // escapeHtml helper to avoid injection
+    function escapeHtml(text) {
+      if (text === null || text === undefined) return '';
+      return String(text)
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#039;');
+    }
 
-      const headers = ['Customer Name', 'Email', 'Age', 'Start Date', 'End Date', 'Days', 'Amount', 'Status', 'Booked Date'];
-      const rows = filtered.map(b => [
-        b.customer_name || '',
-        b.customer_email || '',
-        b.customer_age || '',
-        b.start_date || '',
-        b.end_date || '',
-        b.total_days || '',
-        b.total_amount || '',
-        b.status || '',
-        new Date(b.created_at || '').toLocaleString()
-      ]);
+    // initial load
+    (function init() {
+      // load bookings & dashboard & users
+      loadDashboardData();
+      // We don't auto-load all bookings/users until the tab is opened to keep initial load light
+    })();
 
-      const escapeCell = (cell) => {
-        if (cell === null || cell === undefined) return '';
-        const s = String(cell).replace(/"/g, '""');
-        return `"${s}"`;
-      };
+    // Optional: Realtime subscription to bookings table (keeps UI in sync if other users change bookings)
+    try {
+      // will work only if supabase client exposes realtime functions in your env
+      const bookingsSubscription = window.supabase.channel('public:bookings')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, payload => {
+          console.log('Realtime booking change', payload);
+          // refresh counts & lists quickly
+          loadDashboardData();
+          // if bookings tab is active, refresh bookings list too
+          if (document.getElementById('bookings-tab').classList.contains('active')) loadAllBookings();
+        })
+        .subscribe();
+    } catch (e) {
+      // ignore if realtime not configured
+      console.warn('realtime subscription not available', e);
+    }
 
-      const csvContent = [headers, ...rows].map(r => r.map(escapeCell).join(',')).join('\n');
-
-      const BOM = '\uFEFF';
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `bookings-${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-    };
-
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => showTab(btn.dataset.tab));
-    });
-
-    document.getElementById('statusFilter')?.addEventListener('change', () => {
-      loadAllBookings();
-    });
-
-    loadDashboardData();
   </script>
 
+  <!-- your CSS (copied from earlier) -->
   <style>
-    .admin-main {
-      min-height: calc(100vh - 80px);
-      padding: 40px 0;
-      background: #f5f5f5;
-    }
-
-    .admin-main h1 {
-      margin-bottom: 30px;
-      color: #333;
-    }
-
-    .admin-tabs {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 30px;
-      border-bottom: 2px solid #ddd;
-    }
-
-    .tab-btn {
-      padding: 12px 20px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 1rem;
-      color: #666;
-      border-bottom: 3px solid transparent;
-      transition: all 0.3s;
-    }
-
-    .tab-btn.active {
-      color: #0b6efd;
-      border-bottom-color: #0b6efd;
-    }
-
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    .admin-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-      margin-bottom: 40px;
-    }
-
-    .stat-card {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      text-align: center;
-    }
-
-    .stat-card h3 {
-      margin: 0 0 10px 0;
-      color: #666;
-      font-size: 0.9rem;
-      text-transform: uppercase;
-    }
-
-    .stat-card p {
-      margin: 0;
-      font-size: 2rem;
-      color: #0b6efd;
-      font-weight: bold;
-    }
-
-    .admin-section {
-      background: white;
-      padding: 30px;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    .section-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 25px;
-      flex-wrap: wrap;
-      gap: 15px;
-    }
-
-    .section-header h2 {
-      margin: 0;
-      color: #333;
-    }
-
-    .filters {
-      display: flex;
-      gap: 10px;
-    }
-
-    .filters select {
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 0.9rem;
-    }
-
-    .bookings-list, .users-list {
-      display: grid;
-      gap: 20px;
-    }
-
-    .booking-card, .user-card {
-      background: white;
-      border: 1px solid #eee;
-      border-radius: 8px;
-      padding: 20px;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-    }
-
-    .booking-header, .user-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 15px;
-      padding-bottom: 15px;
-      border-bottom: 1px solid #eee;
-    }
-
-    .booking-customer h4, .user-header h4 {
-      margin: 0 0 5px 0;
-      color: #333;
-    }
-
-    .booking-customer p {
-      margin: 0;
-      color: #666;
-      font-size: 0.9rem;
-    }
-
-    .booking-status, .verification-badge {
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 0.85rem;
-      font-weight: 600;
-    }
-
-    .status-pending {
-      background: #fff3cd;
-      color: #856404;
-    }
-
-    .status-confirmed {
-      background: #d1ecf1;
-      color: #0c5460;
-    }
-
-    .status-completed {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-cancelled {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .status-verified {
-      background: #d4edda;
-      color: #155724;
-    }
-
-    .status-submitted {
-      background: #d1ecf1;
-      color: #0c5460;
-    }
-
-    .booking-details, .user-details {
-      margin-bottom: 15px;
-    }
-
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 8px 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    .detail-row:last-child {
-      border-bottom: none;
-    }
-
-    .label {
-      color: #666;
-      font-weight: 500;
-    }
-
-    .value {
-      color: #333;
-      font-weight: 500;
-    }
-
-    .value.amount {
-      color: #0b6efd;
-      font-weight: bold;
-    }
-
-    .booking-actions, .user-actions {
-      display: flex;
-      gap: 10px;
-    }
-
-    .status-select {
-      flex: 1;
-      padding: 8px 12px;
-      border: 1px solid #ddd;
-      border-radius: 4px;
-      font-size: 0.9rem;
-      cursor: pointer;
-    }
-
-    .btn {
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      transition: all 0.3s;
-    }
-
-    .btn-primary {
-      background: #0b6efd;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #0a58ca;
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background: #5c636a;
-    }
-
-    .btn-success {
-      background: #28a745;
-      color: white;
-    }
-
-    .btn-success:hover {
-      background: #218838;
-    }
-
-    .btn-danger {
-      background: #dc3545;
-      color: white;
-    }
-
-    .btn-danger:hover {
-      background: #bb2d3b;
-    }
-
-    .btn-sm {
-      padding: 6px 12px;
-      font-size: 0.85rem;
-    }
+    /* pasted core styles from your original file so UI matches */
+    .admin-main { min-height: calc(100vh - 80px); padding: 40px 0; background: #f5f5f5; }
+    .admin-main h1 { margin-bottom: 30px; color: #333; }
+    .admin-tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #ddd; }
+    .tab-btn { padding: 12px 20px; background: none; border: none; cursor: pointer; font-size: 1rem; color: #666; border-bottom: 3px solid transparent; transition: all 0.3s; }
+    .tab-btn.active { color: #0b6efd; border-bottom-color: #0b6efd; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+    .admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+    .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); text-align: center; }
+    .stat-card h3 { margin: 0 0 10px 0; color: #666; font-size: 0.9rem; text-transform: uppercase; }
+    .stat-card p { margin: 0; font-size: 2rem; color: #0b6efd; font-weight: bold; }
+    .admin-section { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
+    .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+    .section-header h2 { margin: 0; color: #333; }
+    .filters { display: flex; gap: 10px; }
+    .filters select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; }
+    .bookings-list, .users-list { display: grid; gap: 20px; }
+    .booking-card, .user-card { background: white; border: 1px solid #eee; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05); }
+    .booking-header, .user-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+    .booking-customer h4, .user-header h4 { margin: 0 0 5px 0; color: #333; }
+    .booking-customer p { margin: 0; color: #666; font-size: 0.9rem; }
+    .booking-status, .verification-badge { padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-weight: 600; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-confirmed { background: #d1ecf1; color: #0c5460; }
+    .status-completed { background: #d4edda; color: #155724; }
+    .status-cancelled { background: #f8d7da; color: #721c24; }
+    .status-verified { background: #d4edda; color: #155724; }
+    .status-submitted { background: #d1ecf1; color: #0c5460; }
+    .booking-details, .user-details { margin-bottom: 15px; }
+    .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; }
+    .detail-row:last-child { border-bottom: none; }
+    .label { color: #666; font-weight: 500; }
+    .value { color: #333; font-weight: 500; }
+    .value.amount { color: #0b6efd; font-weight: bold; }
+    .booking-actions, .user-actions { display: flex; gap: 10px; }
+    .status-select { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; cursor: pointer; }
+    .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s; }
+    .btn-primary { background: #0b6efd; color: white; }
+    .btn-secondary { background: #6c757d; color: white; }
+    .btn-success { background: #28a745; color: white; }
+    .btn-danger { background: #dc3545; color: white; }
+    .btn-sm { padding: 6px 12px; font-size: 0.85rem; }
   </style>
 </body>
 </html>

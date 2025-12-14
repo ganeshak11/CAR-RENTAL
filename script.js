@@ -567,7 +567,7 @@ async function returnCar(bookingId) {
 document.addEventListener('DOMContentLoaded', function() {
   const hamburgerBtn = document.getElementById('hamburgerBtn');
   const navMenu = document.getElementById('navMenu');
-  const navActions = document.querySelector('.nav-actions');
+  const navActions = document.getElementById('navActions');
   
   if (hamburgerBtn) {
     hamburgerBtn.addEventListener('click', function(e) {
