@@ -563,3 +563,43 @@ async function returnCar(bookingId) {
     return { success: false, error };
   }
 }
+// ===== HAMBURGER MENU =====
+document.addEventListener('DOMContentLoaded', function() {
+  const hamburgerBtn = document.getElementById('hamburgerBtn');
+  const navMenu = document.getElementById('navMenu');
+  const navActions = document.querySelector('.nav-actions');
+  
+  if (hamburgerBtn) {
+    hamburgerBtn.addEventListener('click', function(e) {
+      e.stopPropagation();
+      hamburgerBtn.classList.toggle('active');
+      
+      if (navMenu) {
+        navMenu.classList.toggle('active');
+      }
+      
+      if (navActions) {
+        navActions.classList.toggle('active');
+      }
+    });
+    
+    // Close menu when clicking on a nav link
+    const navLinks = document.querySelectorAll('.nav-link');
+    navLinks.forEach(link => {
+      link.addEventListener('click', function() {
+        hamburgerBtn.classList.remove('active');
+        if (navMenu) navMenu.classList.remove('active');
+        if (navActions) navActions.classList.remove('active');
+      });
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.navbar')) {
+        hamburgerBtn.classList.remove('active');
+        if (navMenu) navMenu.classList.remove('active');
+        if (navActions) navActions.classList.remove('active');
+      }
+    });
+  }
+});
