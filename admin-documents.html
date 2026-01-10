@@ -13,12 +13,7 @@
         <div class="logo">
           <span>FlexiCarz Admin</span>
         </div>
-        <button class="hamburger-menu" id="hamburgerBtn" aria-label="Toggle menu">
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-          <span class="hamburger-line"></span>
-        </button>
-        <div class="nav-actions" id="navActions">
+        <div class="nav-actions">
           <a href="admin-dashboard.html" class="btn-nav">Dashboard</a>
           <button id="adminLogoutBtn" class="btn-logout">Logout</button>
         </div>
@@ -44,6 +39,13 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Create service role client for admin operations
+    const serviceClient = window.supabase.createClient(
+      'https://atfaviwwbegsvzhsdswl.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF0ZmF2aXd3YmVnc3Z6aHNkc3dsIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2ODAzNjA3NywiZXhwIjoyMDgzNjEyMDc3fQ.-56W0aRK3ScU9Y978sXNbXjhUimyJaLmE0BejjKATZI'
+    );
+  </script>
   <script src="supabase.js"></script>
   <script>
     function formatLocalDateTime(dateString) {
@@ -51,8 +53,32 @@
     }
 
     async function checkAdminAuth() {
-      const { data: { user } } = await window.supabase.auth.getUser();
-      if (!user || user.user_metadata?.role !== 'admin') {
+      try {
+        const { data: { user }, error } = await window.supabase.auth.getUser();
+        if (error || !user) {
+          console.error('Auth error', error);
+          window.location.href = 'admin.html';
+          return;
+        }
+        
+        // Check if user has admin role in user_profiles table
+        const { data: profile, error: profileError } = await window.supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profileError || !profile || profile.role !== 'admin') {
+          console.error('Not an admin user');
+          alert('Access denied. Admin privileges required.');
+          window.location.href = 'admin.html';
+          return;
+        }
+        
+        // User is admin, load documents
+        loadDocuments();
+      } catch (err) {
+        console.error('checkAdminAuth error', err);
         window.location.href = 'admin.html';
       }
     }
@@ -125,21 +151,39 @@
 
     window.approveDocument = async (docId, userId) => {
       try {
-        await window.supabase
+        console.log('Approving document:', docId, 'for user:', userId);
+        
+        const { data: docData, error: docError } = await window.supabase
           .from('user_documents')
           .update({ status: 'approved' })
-          .eq('id', docId);
+          .eq('id', docId)
+          .select();
 
-        await window.supabase
+        if (docError) {
+          console.error('Error updating document:', docError);
+          alert('Error updating document: ' + docError.message);
+          return;
+        }
+        console.log('Document updated:', docData);
+
+        const { data: profileData, error: profileError } = await serviceClient
           .from('user_profiles')
           .update({ verification_status: 'verified', verified_at: new Date().toISOString() })
-          .eq('user_id', userId);
+          .eq('user_id', userId)
+          .select();
+
+        if (profileError) {
+          console.error('Error updating profile:', profileError);
+          alert('Error updating profile: ' + profileError.message);
+          return;
+        }
+        console.log('Profile updated:', profileData);
 
         alert('Document approved! User is now verified.');
         loadDocuments(document.getElementById('statusFilter').value);
       } catch (error) {
         console.error('Error approving document:', error);
-        alert('Error approving document');
+        alert('Error approving document: ' + error.message);
       }
     };
 
@@ -167,7 +211,8 @@
       loadDocuments(e.target.value);
     });
 
-    loadDocuments();
+    // Don't auto-load on page load, checkAdminAuth will call it
+    // loadDocuments();
   </script>
 
   <style>

@@ -125,17 +125,31 @@
     async function checkAdminAuth() {
       try {
         const { data: { user }, error } = await window.supabase.auth.getUser();
-        if (error) {
-          console.error('Auth getUser error', error);
-          // allow page to continue (in case you are testing locally) — but redirect if no user
-        }
-        if (!user || user.user_metadata?.role !== 'admin') {
-          // redirect to admin login page
+        if (error || !user) {
+          console.error('Auth error', error);
           window.location.href = 'admin.html';
+          return;
         }
+        
+        // Check if user has admin role in user_profiles table
+        const { data: profile, error: profileError } = await window.supabase
+          .from('user_profiles')
+          .select('role')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profileError || !profile || profile.role !== 'admin') {
+          console.error('Not an admin user');
+          alert('Access denied. Admin privileges required.');
+          window.location.href = 'admin.html';
+          return;
+        }
+        
+        // User is admin, load dashboard
+        loadDashboardData();
       } catch (err) {
-        console.error('checkAdminAuth err', err);
-        // fallback: do nothing
+        console.error('checkAdminAuth error', err);
+        window.location.href = 'admin.html';
       }
     }
     checkAdminAuth();
@@ -508,7 +522,6 @@
       }
     };
 
-    // ---------- UI hooks ----------
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => showTab(btn.dataset.tab));
     });
@@ -525,7 +538,6 @@
       loadAllUsers();
     };
 
-    // escapeHtml helper to avoid injection
     function escapeHtml(text) {
       if (text === null || text === undefined) return '';
       return String(text)
@@ -562,9 +574,7 @@
 
   </script>
 
-  <!-- your CSS (copied from earlier) -->
   <style>
-    /* pasted core styles from your original file so UI matches */
     .admin-main { min-height: calc(100vh - 80px); padding: 40px 0; background: #f5f5f5; }
     .admin-main h1 { margin-bottom: 30px; color: #333; }
     .admin-tabs { display: flex; gap: 10px; margin-bottom: 30px; border-bottom: 2px solid #ddd; }
@@ -600,7 +610,7 @@
     .value { color: #333; font-weight: 500; }
     .value.amount { color: #0b6efd; font-weight: bold; }
     .booking-actions, .user-actions { display: flex; gap: 10px; }
-    .status-select { flex: 1; padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; cursor: pointer; }
+    .status-select { flex: 1; padding: 8px 12px; border: 1px solid #fffbfb; border-radius: 4px; font-size: 0.9rem; cursor: pointer; }
     .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; transition: all 0.3s; }
     .btn-primary { background: #0b6efd; color: white; }
     .btn-secondary { background: #6c757d; color: white; }

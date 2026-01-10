@@ -75,14 +75,21 @@
 
     async function checkVerificationStatus() {
       try {
-        const user = getCurrentUser();
+        const { data: { user } } = await window.supabase.auth.getUser();
         if (user) {
-          const { data } = await window.supabase
+          // Force fresh query with no cache
+          const { data, error } = await window.supabase
             .from('user_profiles')
             .select('verification_status')
             .eq('user_id', user.id)
-            .single();
+            .maybeSingle();
 
+          if (error) {
+            console.error('Error fetching verification status:', error);
+            return;
+          }
+
+          console.log('Verification status from DB:', data?.verification_status);
           const status = data?.verification_status || 'pending';
           const statusText = document.getElementById('statusText');
           
@@ -213,7 +220,7 @@
     });
 
     checkVerificationStatus();
-    setInterval(checkVerificationStatus, 2000);
+    setInterval(checkVerificationStatus, 5000);
   </script>
   
   <style>

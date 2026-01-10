@@ -24,8 +24,10 @@
           <a href="booking.html" class="nav-link active">Booking</a>
         </nav>
         <div class="nav-actions" id="navActions">
-          <span class="user-name" id="userName"></span>
-          <button id="logoutBtn" class="btn-logout">Logout</button>
+          <span class="user-name" id="userName" style="display: none;"></span>
+          <button id="logoutBtn" class="btn-logout" style="display: none;">Logout</button>
+          <a href="login.html" id="loginBtn" class="btn btn-primary">Login</a>
+          <a href="signup.html" id="signupBtn" class="btn btn-secondary">Sign Up</a>
         </div>
       </div>
     </div>
@@ -127,20 +129,27 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="supabase.js"></script>
   <script>
+    // Check authentication
     if (!isAuthenticated()) {
       alert("Please login first!");
       window.location.href = "login.html";
     }
 
+    // Check document verification status
     async function checkVerification() {
       try {
-        const user = getCurrentUser();
+        const { data: { user } } = await window.supabase.auth.getUser();
         if (user) {
-          const { data } = await window.supabase
+          const { data, error } = await window.supabase
             .from('user_profiles')
             .select('verification_status')
             .eq('user_id', user.id)
             .single();
+
+          if (error) {
+            console.error('Error checking verification:', error);
+            return true; // Allow booking if error checking status
+          }
 
           const status = data?.verification_status || 'pending';
           if (status !== 'verified') {
@@ -148,7 +157,8 @@
               <div class="verification-required">
                 <h3>⚠️ Document Verification Required</h3>
                 <p>Please verify your documents before proceeding with bookings.</p>
-                <a href="verify-documents.html" class="btn btn-primary">Verify Documents</a>
+                <p>Current Status: <strong>${status}</strong></p>
+                <a href="verify-documents.html" class="btn btn-primary btn-lg">Verify Documents Now</a>
               </div>
             `;
             return false;
@@ -157,10 +167,11 @@
         return true;
       } catch (error) {
         console.error('Error checking verification:', error);
-        return false;
+        return true; // Allow booking if error
       }
     }
 
+    // Run verification check on page load
     checkVerification();
   </script>
   <script src="script.js"></script>

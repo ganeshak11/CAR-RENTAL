@@ -178,24 +178,62 @@ if (bookingForm) {
 }
 
 // ---------- USER NAVBAR / LOGOUT ----------
+// Check authentication state and update navbar
+async function updateNavbar() {
+  const userName = document.getElementById('userName');
+  const verifyDocsBtn = document.getElementById('verifyDocsBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+  const loginBtn = document.getElementById('loginBtn');
+  const signupBtn = document.getElementById('signupBtn');
+  
+  if (!userName) return; // Not on a page with navbar
+  
+  try {
+    const { data: { user } } = await window.supabase.auth.getUser();
+    
+    if (user) {
+      // User is logged in - show authenticated buttons
+      const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
+      userName.textContent = `👤 ${displayName}`;
+      userName.style.display = 'inline';
+      if (verifyDocsBtn) verifyDocsBtn.style.display = 'inline-block';
+      if (logoutBtn) logoutBtn.style.display = 'inline-block';
+      if (loginBtn) loginBtn.style.display = 'none';
+      if (signupBtn) signupBtn.style.display = 'none';
+    } else {
+      // User is not logged in - show guest buttons
+      userName.style.display = 'none';
+      if (verifyDocsBtn) verifyDocsBtn.style.display = 'none';
+      if (logoutBtn) logoutBtn.style.display = 'none';
+      if (loginBtn) loginBtn.style.display = 'inline-block';
+      if (signupBtn) signupBtn.style.display = 'inline-block';
+    }
+  } catch (error) {
+    console.error('Error checking auth state:', error);
+    // On error, show guest buttons
+    if (userName) userName.style.display = 'none';
+    if (verifyDocsBtn) verifyDocsBtn.style.display = 'none';
+    if (logoutBtn) logoutBtn.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'inline-block';
+    if (signupBtn) signupBtn.style.display = 'inline-block';
+  }
+}
+
 const logoutBtn = document.getElementById("logoutBtn");
 if (logoutBtn) {
   logoutBtn.addEventListener("click", async () => {
     if (confirm("Are you sure you want to logout?")) {
       await window.supabase.auth.signOut();
+      localStorage.removeItem('supabase_user');
+      localStorage.removeItem('supabase_token');
       window.location.href = "login.html";
     }
   });
 }
 
-const userName = document.getElementById("userName");
-if (userName) {
-  window.supabase.auth.getUser().then(({ data: { user } }) => {
-    if (user) {
-      const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
-      userName.textContent = `👤 ${displayName}`;
-    }
-  });
+// Call updateNavbar on page load
+if (document.getElementById('userName')) {
+  updateNavbar();
 }
 
 // ---------- PAYMENT ----------

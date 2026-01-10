@@ -10,7 +10,6 @@
 
 <body>
 
-  <!-- Navigation Header -->
   <header class="navbar">
     <div class="container">
       <div class="navbar-content">
@@ -36,9 +35,14 @@
         </nav>
 
         <div class="nav-actions" id="navActions">
-          <span class="user-name" id="userName"></span>
-          <a href="verify-documents.html" id="verifyDocsBtn" class="btn btn-verify">Verify Documents</a>
-          <button id="logoutBtn" class="btn-logout">Logout</button>
+          <!-- Logged in user actions (hidden by default) -->
+          <span class="user-name" id="userName" style="display: none;"></span>
+          <a href="verify-documents.html" id="verifyDocsBtn" class="btn btn-verify" style="display: none;">Verify Documents</a>
+          <button id="logoutBtn" class="btn-logout" style="display: none;">Logout</button>
+          
+          <!-- Guest user actions (shown by default) -->
+          <a href="login.html" id="loginBtn" class="btn btn-primary">Login</a>
+          <a href="signup.html" id="signupBtn" class="btn btn-secondary">Sign Up</a>
         </div>
       </div>
     </div>
