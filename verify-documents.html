@@ -67,7 +67,35 @@
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
   <script src="supabase.js"></script>
+  <script>
+    // Initialize EmailJS - Replace with your public key from https://dashboard.emailjs.com/admin/account
+    emailjs.init('rfTetd0QB_FpxrikB');
+    
+    // Function to send admin notification email
+    async function sendAdminNotification(userData, documentUrl) {
+      try {
+        const templateParams = {
+          user_name: userData.full_name || userData.email.split('@')[0],
+          user_email: userData.email,
+          document_url: documentUrl,
+          submission_date: new Date().toLocaleString(),
+          admin_panel_link: window.location.origin + '/admin-documents.html'
+        };
+        
+        await emailjs.send(
+          'service_vluz4yn',    // Replace with your EmailJS service ID
+          'template_mnehgnr',   // Replace with your EmailJS template ID
+          templateParams
+        );
+        
+        console.log('✅ Admin notification sent successfully');
+      } catch (error) {
+        console.error('❌ Failed to send admin notification:', error);
+      }
+    }
+  </script>
   <script>
     if (!isAuthenticated()) {
       window.location.href = 'login.html';
@@ -77,20 +105,29 @@
       try {
         const { data: { user } } = await window.supabase.auth.getUser();
         if (user) {
-          // Force fresh query with no cache
-          const { data, error } = await window.supabase
-            .from('user_profiles')
-            .select('verification_status')
+          // Check document status instead of user profile status
+          const { data: documents, error } = await window.supabase
+            .from('user_documents')
+            .select('status')
             .eq('user_id', user.id)
-            .maybeSingle();
+            .order('created_at', { ascending: false })
+            .limit(1);
 
           if (error) {
-            console.error('Error fetching verification status:', error);
+            console.error('Error fetching document status:', error);
             return;
           }
 
-          console.log('Verification status from DB:', data?.verification_status);
-          const status = data?.verification_status || 'pending';
+          const docStatus = documents?.[0]?.status || 'none';
+          console.log('Document status from DB:', docStatus);
+          
+          // Map document status to verification status
+          let status = 'pending';
+          if (docStatus === 'approved') status = 'verified';
+          else if (docStatus === 'pending') status = 'submitted';
+          else if (docStatus === 'rejected') status = 'rejected';
+          else if (docStatus === 'none') status = 'pending';
+          
           const statusText = document.getElementById('statusText');
           
           if (statusText) {
@@ -114,6 +151,19 @@
                   <h3>⏳ Documents Under Review</h3>
                   <p>Your documents have been submitted and are currently being reviewed by our admin team.</p>
                   <button type="button" onclick="location.reload()" class="btn btn-secondary">Refresh Status</button>
+                  <button type="button" onclick="location.reload()" class="btn btn-primary" style="margin-top: 10px;">Resubmit Documents</button>
+                  <a href="index.html" class="btn btn-secondary" style="margin-top: 10px;">Back to Home</a>
+                </div>
+              `;
+            }
+          } else if (status === 'rejected') {
+            const verifyForm = document.getElementById('verifyForm');
+            if (verifyForm && verifyForm.querySelector('.rejected-message') === null) {
+              verifyForm.innerHTML = `
+                <div class="rejected-message">
+                  <h3>❌ Documents Rejected</h3>
+                  <p>Your documents were rejected. Please upload new documents for verification.</p>
+                  <button type="button" onclick="location.reload()" class="btn btn-primary">Resubmit Documents</button>
                   <a href="index.html" class="btn btn-secondary" style="margin-top: 10px;">Back to Home</a>
                 </div>
               `;
@@ -190,7 +240,26 @@
             return;
           }
 
-          msg.textContent = '✅ Document submitted successfully! Awaiting admin approval.';
+          // Get signed URL for document
+          const { data: urlData } = await window.supabase.storage
+            .from('documents')
+            .createSignedUrl(data.path, 604800); // 7 days
+          
+          // Get user profile for full name
+          const { data: profile } = await window.supabase
+            .from('user_profiles')
+            .select('full_name')
+            .eq('user_id', user.id)
+            .single();
+          
+          // Send email notification to admin
+          const userData = {
+            email: user.email,
+            full_name: profile?.full_name
+          };
+          await sendAdminNotification(userData, urlData?.signedUrl || '');
+
+          msg.textContent = '✅ Document submitted successfully! Admin has been notified.';
           msg.className = 'message show success';
           
           setTimeout(() => {

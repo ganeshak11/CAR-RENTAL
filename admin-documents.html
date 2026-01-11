@@ -107,6 +107,7 @@
           return;
         }
 
+        // Get user profiles
         const userIds = [...new Set(documents.map(d => d.user_id))];
         const { data: profiles } = await window.supabase
           .from('user_profiles')
@@ -116,12 +117,30 @@
         const profileMap = {};
         profiles?.forEach(p => profileMap[p.user_id] = p);
 
+        // Get user emails from auth.users using service client
+        const userDataPromises = userIds.map(async (userId) => {
+          try {
+            const { data } = await serviceClient.auth.admin.getUserById(userId);
+            return { userId, email: data?.user?.email };
+          } catch (e) {
+            return { userId, email: null };
+          }
+        });
+        const userData = await Promise.all(userDataPromises);
+        const emailMap = {};
+        userData.forEach(u => emailMap[u.userId] = u.email);
+
         documentsList.innerHTML = documents.map(doc => {
           const profile = profileMap[doc.user_id];
+          const email = emailMap[doc.user_id];
+          const displayName = profile?.full_name || email?.split('@')[0] || 'Unknown User';
           return `
           <div class="document-card">
             <div class="doc-header">
-              <h3>${profile?.full_name || 'Unknown'}</h3>
+              <div>
+                <h3>${displayName}</h3>
+                ${email ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 0.9rem;">${email}</p>` : ''}
+              </div>
               <span class="doc-status status-${doc.status}">${doc.status}</span>
             </div>
             <div class="doc-info">
@@ -146,7 +165,7 @@
     }
 
     function getDocumentUrl(path) {
-      return `https://lxuebhvwykqblyrgqsfz.supabase.co/storage/v1/object/public/documents/${path}`;
+      return `https://atfaviwwbegsvzhsdswl.supabase.co/storage/v1/object/public/documents/${path}`;
     }
 
     window.approveDocument = async (docId, userId) => {

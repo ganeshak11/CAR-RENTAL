@@ -195,7 +195,8 @@ async function updateNavbar() {
       // User is logged in - show authenticated buttons
       const displayName = user.user_metadata?.full_name || user.email.split('@')[0];
       userName.textContent = `👤 ${displayName}`;
-      userName.style.display = 'inline';
+      userName.href = 'profile.html';
+      userName.style.display = 'inline-block';
       if (verifyDocsBtn) verifyDocsBtn.style.display = 'inline-block';
       if (logoutBtn) logoutBtn.style.display = 'inline-block';
       if (loginBtn) loginBtn.style.display = 'none';

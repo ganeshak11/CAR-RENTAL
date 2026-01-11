@@ -140,24 +140,30 @@
       try {
         const { data: { user } } = await window.supabase.auth.getUser();
         if (user) {
-          const { data, error } = await window.supabase
-            .from('user_profiles')
-            .select('verification_status')
+          // Check document status instead of user profile
+          const { data: documents, error } = await window.supabase
+            .from('user_documents')
+            .select('status')
             .eq('user_id', user.id)
-            .single();
+            .order('created_at', { ascending: false })
+            .limit(1);
 
           if (error) {
             console.error('Error checking verification:', error);
             return true; // Allow booking if error checking status
           }
 
-          const status = data?.verification_status || 'pending';
-          if (status !== 'verified') {
+          const docStatus = documents?.[0]?.status || 'none';
+          if (docStatus !== 'approved') {
+            let statusText = 'Not Submitted';
+            if (docStatus === 'pending') statusText = 'Under Review';
+            else if (docStatus === 'rejected') statusText = 'Rejected';
+            
             document.querySelector('.booking-container').innerHTML = `
               <div class="verification-required">
                 <h3>⚠️ Document Verification Required</h3>
                 <p>Please verify your documents before proceeding with bookings.</p>
-                <p>Current Status: <strong>${status}</strong></p>
+                <p>Current Status: <strong>${statusText}</strong></p>
                 <a href="verify-documents.html" class="btn btn-primary btn-lg">Verify Documents Now</a>
               </div>
             `;

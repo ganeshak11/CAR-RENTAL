@@ -1,0 +1,77 @@
+<!-- SIMPLE EMAIL NOTIFICATION SETUP (No Backend Required) -->
+<!-- Add this script to verify-documents.html -->
+
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+<script>
+  // Initialize EmailJS with your public key
+  // Get this from https://dashboard.emailjs.com/admin/account
+  emailjs.init('YOUR_PUBLIC_KEY');
+  
+  // Add this function after successful document upload
+  async function sendAdminNotification(documentData) {
+    try {
+      const templateParams = {
+        user_name: documentData.userName,
+        user_email: documentData.userEmail,
+        document_url: documentData.documentUrl,
+        submission_date: new Date().toLocaleString(),
+        admin_panel_link: window.location.origin + '/admin-documents.html'
+      };
+      
+      await emailjs.send(
+        'YOUR_SERVICE_ID',    // From EmailJS dashboard
+        'YOUR_TEMPLATE_ID',   // From EmailJS dashboard
+        templateParams
+      );
+      
+      console.log('Admin notification sent successfully');
+    } catch (error) {
+      console.error('Failed to send admin notification:', error);
+    }
+  }
+</script>
+
+<!-- 
+EMAILJS SETUP STEPS:
+
+1. Go to https://www.emailjs.com and sign up (FREE)
+
+2. Add Email Service:
+   - Dashboard → Email Services → Add New Service
+   - Choose Gmail/Outlook/etc
+   - Connect your admin email account
+
+3. Create Email Template:
+   - Dashboard → Email Templates → Create New Template
+   - Template content:
+
+   Subject: 🚗 New Document Verification - {{user_name}}
+   
+   Body:
+   Hello Admin,
+   
+   A new document has been submitted for verification.
+   
+   User Details:
+   - Name: {{user_name}}
+   - Email: {{user_email}}
+   - Submitted: {{submission_date}}
+   
+   Document URL: {{document_url}}
+   
+   Review and approve: {{admin_panel_link}}
+   
+   Best regards,
+   FlexiCarz System
+
+4. Get your credentials:
+   - Public Key: Dashboard → Account → API Keys
+   - Service ID: Dashboard → Email Services (click on your service)
+   - Template ID: Dashboard → Email Templates (click on your template)
+
+5. Update the script above with your IDs
+
+6. Test by uploading a document
+
+COST: FREE (200 emails/month)
+-->

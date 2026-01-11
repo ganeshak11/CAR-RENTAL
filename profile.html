@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Profile - FlexiCarz</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="navbar">
+    <div class="container">
+      <div class="navbar-content">
+        <div class="logo">
+          <a href="index.html" style="color: white; text-decoration: none;">FlexiCarz</a>
+        </div>
+        <button class="hamburger-menu" id="hamburgerBtn" aria-label="Toggle menu">
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+          <span class="hamburger-line"></span>
+        </button>
+        <nav class="nav-links" id="navMenu">
+          <a href="index.html" class="nav-link">Home</a>
+          <a href="vehicles.html" class="nav-link">Vehicles</a>
+          <a href="booking.html" class="nav-link">Booking</a>
+        </nav>
+        <div class="nav-actions" id="navActions">
+          <a href="profile.html" class="user-name" id="userName" style="display: none;"></a>
+          <a href="verify-documents.html" id="verifyDocsBtn" class="btn btn-secondary" style="display: none;">Verify Documents</a>
+          <button id="logoutBtn" class="btn-logout" style="display: none;">Logout</button>
+          <a href="login.html" id="loginBtn" class="btn btn-primary">Login</a>
+          <a href="signup.html" id="signupBtn" class="btn btn-secondary">Sign Up</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="profile-main">
+    <div class="container">
+      <h1>My Profile</h1>
+      
+      <div class="profile-container">
+        <div class="profile-card">
+          <h2>👤 Profile Information</h2>
+          <div id="profileInfo" class="profile-info"></div>
+        </div>
+
+        <div class="bookings-history-card">
+          <h2>📋 Booking History</h2>
+          <div id="bookingHistory" class="bookings-history"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="supabase.js"></script>
+  <script src="script.js"></script>
+  <script>
+    if (!isAuthenticated()) {
+      window.location.href = 'login.html';
+    }
+
+    async function loadProfile() {
+      try {
+        const { data: { user } } = await window.supabase.auth.getUser();
+        if (!user) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        // Load profile info
+        const { data: profile } = await window.supabase
+          .from('user_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        const profileInfo = document.getElementById('profileInfo');
+        profileInfo.innerHTML = `
+          <div class="info-row">
+            <span class="info-label">Name:</span>
+            <span class="info-value">${profile?.full_name || user.email.split('@')[0]}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email:</span>
+            <span class="info-value">${user.email}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Verification Status:</span>
+            <span class="status-badge status-${profile?.verification_status || 'pending'}">${profile?.verification_status || 'pending'}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Member Since:</span>
+            <span class="info-value">${new Date(user.created_at).toLocaleDateString()}</span>
+          </div>
+        `;
+
+        // Load booking history
+        const { data: bookings } = await window.supabase
+          .from('bookings')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
+
+        const bookingHistory = document.getElementById('bookingHistory');
+        
+        if (!bookings || bookings.length === 0) {
+          bookingHistory.innerHTML = '<p class="no-bookings">No bookings yet. <a href="booking.html">Book your first car!</a></p>';
+          return;
+        }
+
+        bookingHistory.innerHTML = bookings.map(booking => `
+          <div class="booking-history-card">
+            <div class="booking-history-header">
+              <h3>Booking #${booking.id.toString().slice(0, 8)}</h3>
+              <span class="booking-status status-${booking.status}">${booking.status}</span>
+            </div>
+            <div class="booking-history-details">
+              <div class="detail-item">
+                <span class="detail-label">📅 Dates:</span>
+                <span class="detail-value">${booking.start_date} to ${booking.end_date}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">⏱️ Duration:</span>
+                <span class="detail-value">${booking.total_days} days</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">💰 Amount:</span>
+                <span class="detail-value amount">₹${booking.total_amount.toLocaleString()}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">📆 Booked On:</span>
+                <span class="detail-value">${new Date(booking.created_at).toLocaleDateString()}</span>
+              </div>
+            </div>
+            ${booking.status === 'confirmed' ? `
+              <div class="booking-actions">
+                <button onclick="returnCar('${booking.id}', '${booking.car_id}')" class="btn btn-return">Return Car</button>
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+    }
+
+    loadProfile();
+
+    window.returnCar = async (bookingId, carId) => {
+      if (!confirm('Mark this car as returned?')) return;
+      
+      try {
+        console.log('Returning car:', bookingId, carId);
+        
+        const { data: bookingData, error: bookingError } = await window.supabase
+          .from('bookings')
+          .update({ status: 'completed' })
+          .eq('id', bookingId)
+          .select();
+
+        if (bookingError) {
+          console.error('Booking update error:', bookingError);
+          alert('❌ Error updating booking: ' + bookingError.message);
+          return;
+        }
+        
+        console.log('Booking updated:', bookingData);
+
+        const { data: carData, error: carError } = await window.supabase
+          .from('cars')
+          .update({ is_available: true })
+          .eq('id', carId)
+          .select();
+
+        if (carError) {
+          console.error('Car update error:', carError);
+          alert('❌ Error updating car availability: ' + carError.message);
+          return;
+        }
+        
+        console.log('Car updated:', carData);
+
+        alert('✅ Car returned successfully!');
+        loadProfile();
+      } catch (error) {
+        console.error('Error returning car:', error);
+        alert('❌ Error: ' + error.message);
+      }
+    };
+  </script>
+
+  <style>
+    .profile-main { min-height: calc(100vh - 80px); padding: 40px 0; background: #f8f9fa; }
+    .profile-main h1 { margin-bottom: 30px; color: #2d3748; font-size: 2rem; font-weight: 700; }
+    
+    .profile-container { display: grid; gap: 24px; }
+    
+    .profile-card, .bookings-history-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .profile-card h2, .bookings-history-card h2 { margin: 0 0 24px 0; color: #2d3748; font-size: 1.5rem; font-weight: 600; }
+    
+    .profile-info { display: grid; gap: 16px; }
+    .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f7fafc; }
+    .info-row:last-child { border-bottom: none; }
+    .info-label { color: #718096; font-weight: 500; }
+    .info-value { color: #2d3748; font-weight: 600; }
+    
+    .status-badge { padding: 6px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+    .status-pending { background: #fef3c7; color: #92400e; }
+    .status-submitted { background: #dbeafe; color: #1e40af; }
+    .status-verified { background: #d1fae5; color: #065f46; }
+    .status-confirmed { background: #dbeafe; color: #1e40af; }
+    .status-completed { background: #d1fae5; color: #065f46; }
+    .status-cancelled { background: #fee2e2; color: #991b1b; }
+    
+    .bookings-history { display: grid; gap: 20px; }
+    .no-bookings { text-align: center; color: #718096; padding: 40px; }
+    .no-bookings a { color: #667eea; text-decoration: none; font-weight: 600; }
+    
+    .booking-history-card { background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; transition: all 0.3s; }
+    .booking-history-card:hover { border-color: #cbd5e0; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    
+    .booking-history-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #e2e8f0; }
+    .booking-history-header h3 { margin: 0; color: #2d3748; font-size: 1.1rem; }
+    
+    .booking-history-details { display: grid; gap: 12px; }
+    .detail-item { display: flex; justify-content: space-between; }
+    .detail-label { color: #718096; font-size: 0.9rem; }
+    .detail-value { color: #2d3748; font-weight: 600; font-size: 0.9rem; }
+    .detail-value.amount { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 700; font-size: 1.1rem; }
+    
+    .booking-actions { margin-top: 16px; padding-top: 16px; border-top: 2px solid #e2e8f0; }
+    .btn-return { background: #10b981; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 0.9rem; font-weight: 500; transition: all 0.3s; }
+    .btn-return:hover { background: #059669; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(16,185,129,0.3); }
+    
+    .user-name { color: white; text-decoration: none; padding: 8px 16px; border-radius: 6px; transition: background 0.3s; cursor: pointer; }
+    .user-name:hover { background: rgba(255,255,255,0.2); }
+  </style>
+</body>
+</html>
